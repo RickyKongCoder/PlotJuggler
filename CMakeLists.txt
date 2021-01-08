@@ -85,6 +85,7 @@ find_package(Qt5 REQUIRED COMPONENTS
     Xml
     Svg)
 
+find_package(Qt5 QUIET COMPONENTS SerialPort)
 find_package(Qt5 QUIET COMPONENTS WebSockets)
 
 set( QT_LINK_LIBRARIES
@@ -126,6 +127,7 @@ include_directories(
     ${Qt5PrintSupport_INCLUDE_DIRS}
     ${Qt5Xml_INCLUDE_DIRS}
     ${Qt5WebSockets_INCLUDE_DIRS}
+    ${Qt5SerialPort_INCLUDE_DIRS}
     ${Qt5Multimedia_INCLUDE_DIRS}
     ${Qt5MultimediaWidgets_INCLUDE_DIRS}
     ${Qt5Svg_INCLUDE_DIRS}
@@ -179,6 +181,11 @@ else()
     else()
         add_subdirectory( plugins/DataStreamWebSocket )
     endif()
+    if( NOT Qt5SerialPort_FOUND)
+        message(STATUS "Qt5SerialPort not found. Skipping plugins/DataStreamSerialPort")
+    else()
+        add_subdirectory( plugins/DataStreamSerialPort )
+    endif()
 endif()
 
 add_subdirectory( plugins/ROS )
@@ -189,11 +196,29 @@ endif()
 
 #############################################################
 
-set(DESKTOP_ICON_DIR "${CMAKE_INSTALL_PREFIX}/share/icons")
+#target_link_libraries(DataLoadULog DataLoadCSV DataStreamSample DataStreamSerialPort DataStreamWebSocket)
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/PlotJuggler.desktop
-        DESTINATION  "${CMAKE_INSTALL_PREFIX}/share/applications"  )
+set(APP_NAME PlotJuggler)
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/plotjuggler.svg
-        DESTINATION ${DESKTOP_ICON_DIR}  )
+add_executable(${APP_NAME} MACOSX_BUNDLE main.cpp)
+#target_link_libraries(${APP_NAME} DataLoadULog DataLoadCSV DataStreamSample DataStreamSerialPort DataStreamWebSocket)
 
+add_custom_target(Docs SOURCES README.md .gitignore LICENSE)
+
+# Destination paths below are relative to ${CMAKE_INSTALL_PREFIX}
+install(TARGETS ${APP_NAME}
+    BUNDLE DESTINATION . COMPONENT Runtime
+    RUNTIME DESTINATION bin COMPONENT Runtime
+    )
+
+# Note Mac specific extension .app
+set(APPS "\${CMAKE_INSTALL_PREFIX}/${APP_NAME}.app")
+
+# Directories to look for dependencies
+set(DIRS ${CMAKE_BINARY_DIR})
+
+install(CODE "include(BundleUtilities)
+    fixup_bundle(\"${APPS}\" \"\" \"${DIRS}\")")
+
+set(CPACK_GENERATOR "DRAGNDROP")
+include(CPack)
