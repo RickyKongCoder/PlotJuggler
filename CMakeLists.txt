@@ -195,30 +195,3 @@ if(COMPILING_WITH_AMENT)
 endif()
 
 #############################################################
-
-#target_link_libraries(DataLoadULog DataLoadCSV DataStreamSample DataStreamSerialPort DataStreamWebSocket)
-
-set(APP_NAME PlotJuggler)
-
-add_executable(${APP_NAME} MACOSX_BUNDLE main.cpp)
-#target_link_libraries(${APP_NAME} DataLoadULog DataLoadCSV DataStreamSample DataStreamSerialPort DataStreamWebSocket)
-
-add_custom_target(Docs SOURCES README.md .gitignore LICENSE)
-
-# Destination paths below are relative to ${CMAKE_INSTALL_PREFIX}
-install(TARGETS ${APP_NAME}
-    BUNDLE DESTINATION . COMPONENT Runtime
-    RUNTIME DESTINATION bin COMPONENT Runtime
-    )
-
-# Note Mac specific extension .app
-set(APPS "\${CMAKE_INSTALL_PREFIX}/${APP_NAME}.app")
-
-# Directories to look for dependencies
-set(DIRS ${CMAKE_BINARY_DIR})
-
-install(CODE "include(BundleUtilities)
-    fixup_bundle(\"${APPS}\" \"\" \"${DIRS}\")")
-
-set(CPACK_GENERATOR "DRAGNDROP")
-include(CPack)
