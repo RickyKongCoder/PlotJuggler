@@ -1,4 +1,4 @@
-
+set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
 include_directories( ./ ../  ../include)
 
 QT5_ADD_RESOURCES (RES_SRC  resource.qrc )
@@ -81,6 +81,11 @@ target_link_libraries(PlotJuggler
     colorwidgets
     qwt_static
     lua_static )
+    
+if(APPLE)
+    SET(MACOSX_BUNDLE_BUNDLE_NAME PlotJuggler)
+    SET_TARGET_PROPERTIES(PlotJuggler PROPERTIES MACOSX_BUNDLE TRUE)
+endif()
 
 if(COMPILING_WITH_CATKIN)
     install(TARGETS PlotJuggler

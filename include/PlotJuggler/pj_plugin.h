@@ -34,10 +34,11 @@ class PlotJugglerPlugin : public QObject {
 
 inline std::vector<QString> MoveData(PlotDataMapRef& source, PlotDataMapRef& destination) {
 	std::vector<QString> added_curves;
-	qDebug() << "source size:" << source.numeric.size();
+	// qDebug() << "source size:" << source.numeric.size();
 	for (auto& it : source.numeric) {
 		const std::string& name = it.first;
-		qDebug() << "second size:" << it.second.size() << " destination name count:" << destination.numeric.count(name);
+		// qDebug() << "second size:" << it.second.size() << " destination name count:" <<
+		// destination.numeric.count(name);
 		if (it.second.size() > 0 && destination.numeric.count(name) == 0) {
 			added_curves.push_back(QString::fromStdString(name));
 		}
@@ -56,9 +57,14 @@ inline std::vector<QString> MoveData(PlotDataMapRef& source, PlotDataMapRef& des
 					.first;
 		}
 		auto& destination_plot = plot_with_same_name->second;
+		// qDebug() << "source_plot size:" << source_plot.size();
+		// try {
 		for (size_t i = 0; i < source_plot.size(); i++) {
 			destination_plot.pushBack(source_plot.at(i));
 		}
+		// } catch (std::exception& e) {
+		// 	qDebug() << "gg";
+		// }
 		source_plot.clear();
 	}
 
