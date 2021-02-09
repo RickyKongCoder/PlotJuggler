@@ -65,11 +65,11 @@ void OpenNewReleaseDialog(QNetworkReply* reply)
 QPixmap getFunnySplashscreen()
 {
   QSettings settings;
-  qsrand(time(nullptr));
+  srand (time(nullptr));
 
   auto getNum = []() {
     const int last_image_num = 60;
-    int n = qrand() % (last_image_num + 2);
+    int n = rand() % (last_image_num + 2);
     if (n > last_image_num)
     {
       n = 0;
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
     QPixmap main_pixmap = getFunnySplashscreen();
     QSplashScreen splash(main_pixmap, Qt::WindowStaysOnTopHint);
     QDesktopWidget* desktop = QApplication::desktop();
-    const int scrn = desktop->screenNumber(QCursor::pos());
+    const int scrn = desktop->screenNumber();
     const QPoint currentDesktopsCenter = desktop->availableGeometry(scrn).center();
     splash.move(currentDesktopsCenter - splash.rect().center());
 
