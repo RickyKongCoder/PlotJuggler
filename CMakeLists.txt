@@ -84,6 +84,8 @@ find_package(Qt5 REQUIRED COMPONENTS
     WebSockets
     Network)
 
+find_package(Qt5 QUIET COMPONENTS SerialPort)
+
 set( QT_LINK_LIBRARIES
     Qt5::Core
     Qt5::Widgets
@@ -115,6 +117,7 @@ include_directories(
     ${Qt5Widgets_INCLUDE_DIRS}
     ${Qt5Concurrent_INCLUDE_DIRS}
     ${Qt5PrintSupport_INCLUDE_DIRS}
+    ${Qt5SerialPort_INCLUDE_DIRS}
     ${Qt5Xml_INCLUDE_DIRS}
     ${Qt5WebSockets_INCLUDE_DIRS}
     ${Qt5Svg_INCLUDE_DIRS}
@@ -249,6 +252,11 @@ add_subdirectory( plugins/DataStreamSample )
 add_subdirectory( plugins/DataStreamWebsocket )
 add_subdirectory( plugins/DataStreamUDP )
 
+if( NOT Qt5SerialPort_FOUND)
+    message(STATUS "Qt5SerialPort not found. Skipping plugins/DataStreamSerialPort")
+else()
+    add_subdirectory( plugins/DataStreamSerialPort )
+endif()
 
 if( ZMQ_FOUND )
   add_subdirectory( plugins/DataStreamZMQ )
