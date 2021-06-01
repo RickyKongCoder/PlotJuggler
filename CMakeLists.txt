@@ -109,6 +109,13 @@ else()
     set( QT_LINK_LIBRARIES ${QT_LINK_LIBRARIES} Qt5::WebSockets)
 endif()
 
+if( NOT Qt5SerialPort_FOUND)
+    message(STATUS "Can't find Qt5SerialPort in your system. Have you tried [sudo apt-get install libqt5serialport5-dev] ?")
+    add_definitions( -DQWT_NO_SVG )
+else()
+    set( QT_LINK_LIBRARIES ${QT_LINK_LIBRARIES} Qt5::SerialPort)
+endif()
+
 if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "No build type selected, default to RelWithDebInfo")
     set(CMAKE_BUILD_TYPE "RelWithDebInfo")
