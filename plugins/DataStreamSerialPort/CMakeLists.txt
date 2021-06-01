@@ -18,4 +18,14 @@ SET( SRC
 add_library(DataStreamSerialPort SHARED ${SRC} ${UI_SRC}  )
 target_link_libraries(DataStreamSerialPort  ${Qt5Widgets_LIBRARIES} Qt5::SerialPort Qt5::Xml)
 
-
+if(COMPILING_WITH_CATKIN)
+    install(TARGETS DataStreamSerialPort
+        ARCHIVE DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        LIBRARY DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION} )
+elseif(COMPILING_WITH_AMENT)
+    install(TARGETS DataStreamSerialPort
+            DESTINATION  lib/${PROJECT_NAME} )
+else()
+    install(TARGETS DataStreamSerialPort DESTINATION bin  )
+endif()
