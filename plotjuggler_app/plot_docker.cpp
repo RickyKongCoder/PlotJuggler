@@ -243,6 +243,12 @@ void PlotDocker::zoomOut()
     plotAt(index)->zoomOut(false); // TODO is it false?
   }
 }
+void PlotDocker::zoomAuto()
+{
+    for (int index = 0; index < plotCount(); index++) {
+        plotAt(index)->zoomAuto(false);
+    }
+}
 
 void PlotDocker::replot()
 {

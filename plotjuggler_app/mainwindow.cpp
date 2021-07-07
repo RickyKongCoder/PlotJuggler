@@ -689,7 +689,7 @@ QStringList MainWindow::initializePlugins(QString directory_name)
             if( isStreamingActive() && !_replot_timer->isActive() )
             {
               _replot_timer->setSingleShot(true);
-              _replot_timer->start( 40 );
+              _replot_timer->start(0);
             }
           });
         }
@@ -2014,11 +2014,11 @@ void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
     double max_time = std::get<1>(range);
     _tracker_time = max_time;
     onTrackerTimeUpdated(_tracker_time, false);
-  }
-  else
-  {
-    updateTimeOffset();
     updateTimeSlider();
+
+  } else {
+      updateTimeOffset();
+      updateTimeSlider();
   }
   //--------------------------------
   if( move_ret.data_pushed )
@@ -2033,11 +2033,10 @@ void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
           PlotDocker* matrix = static_cast<PlotDocker*>(tabs->widget(index));
           matrix->zoomOut();
         }
-      }
-      else
-      {
-        PlotDocker* matrix = it.second->currentTab();
-        matrix->zoomOut();  // includes replot
+      } else {
+          PlotDocker *matrix = it.second->currentTab();
+
+          matrix->zoomAuto(); // includes replot
       }
     }
   }
@@ -3010,5 +3009,23 @@ QStringList MainWindow::readAllCurvesFromXML(QDomElement root_node)
   return curves;
 }
 
+void MainWindow::on_horExpandpushButton_pressed()
+{
+    auto visitor = [=](PlotWidget *plot) { plot->on_zoomExpandHorizontal_triggered(false); };
+    this->forEachWidget(visitor);
+    onUndoableChange();
+}
 
+void MainWindow::on_horScaleDownpushButton_clicked()
+{
+    auto visitor = [=](PlotWidget *plot) { plot->on_zoomScaleDownHorizontal_triggered(false); };
+    this->forEachWidget(visitor);
+    onUndoableChange();
+}
 
+void MainWindow::on_ViewModSetting_clicked()
+{
+    auto visitor = [=](PlotWidget *plot) { plot->toggleViewMode(); };
+    this->forEachWidget(visitor);
+    onUndoableChange();
+}

@@ -103,7 +103,7 @@ public:
   void setHorizontalLink(bool enabled);
 
   void zoomOut();
-
+  void zoomAuto();
   void replot();
 
 public slots:

@@ -315,7 +315,17 @@ void PlotWidget::buildActions()
 
   _action_image_to_clipboard = new QAction("&Copy image to clipboard", this);
   connect(_action_image_to_clipboard, &QAction::triggered, this, &PlotWidget::on_copyToClipboard);
+  _action_zoomExpandHorizontally = new QAction("&Zoom Expand Horizontally", this);
+  connect(_action_zoomExpandHorizontally,
+          &QAction::triggered,
+          this,
+          &PlotWidget::on_zoomExpandHorizontal_triggered);
 
+  _action_zoomScaleDownHorizontally = new QAction("&Zoom Scale Down Horizontally", this);
+  connect(_action_zoomScaleDownHorizontally,
+          &QAction::triggered,
+          this,
+          &PlotWidget::on_zoomScaleDownHorizontal_triggered);
 }
 
 void PlotWidget::canvasContextMenuTriggered(const QPoint& pos)
@@ -352,6 +362,8 @@ void PlotWidget::canvasContextMenuTriggered(const QPoint& pos)
   menu.addAction(_action_zoomOutMaximum);
   menu.addAction(_action_zoomOutHorizontally);
   menu.addAction(_action_zoomOutVertically);
+  menu.addAction(_action_zoomExpandHorizontally);
+  menu.addAction(_action_zoomScaleDownHorizontally);
   menu.addSeparator();
   menu.addAction(_action_removeAllCurves);
   menu.addSeparator();
@@ -1034,6 +1046,44 @@ void PlotWidget::updateMaximumZoomArea()
   }
   _max_zoom_rect = max_rect;
 }
+void PlotWidget::updateAutoZoomArea()
+{
+    QRectF max_rect;
+    auto rangeX = getMaximumRangeX();
+    max_rect.setLeft(rangeX.max - plot_autoXWidth);
+    max_rect.setRight(rangeX.max);
+
+    auto rangeY = getMaximumRangeY(rangeX);
+    max_rect.setBottom(rangeY.min);
+    max_rect.setTop(rangeY.max);
+
+    if (isXYPlot() && _keep_aspect_ratio) {
+        const QRectF canvas_rect = canvas()->contentsRect();
+        const double canvas_ratio = fabs(canvas_rect.width() / canvas_rect.height());
+        const double data_ratio = fabs(max_rect.width() / max_rect.height());
+        if (data_ratio < canvas_ratio) {
+            // height is negative!!!!
+            double new_width = fabs(max_rect.height() * canvas_ratio);
+            double increment = new_width - max_rect.width();
+            max_rect.setWidth(new_width);
+            max_rect.moveLeft(max_rect.left() - 0.5 * increment);
+        } else {
+            // height must be negative!!!!
+            double new_height = -(max_rect.width() / canvas_ratio);
+            double increment = fabs(new_height - max_rect.height());
+            max_rect.setHeight(new_height);
+            max_rect.moveTop(max_rect.top() + 0.5 * increment);
+        }
+        _magnifier->setAxisLimits(xBottom, max_rect.left(), max_rect.right());
+        _magnifier->setAxisLimits(yLeft, max_rect.bottom(), max_rect.top());
+        _zoomer->keepAspectRatio(true);
+    } else {
+        _magnifier->setAxisLimits(xBottom, max_rect.left(), max_rect.right());
+        _magnifier->setAxisLimits(yLeft, max_rect.bottom(), max_rect.top());
+        _zoomer->keepAspectRatio(false);
+    }
+    _max_zoom_rect = max_rect;
+}
 
 void PlotWidget::rescaleEqualAxisScaling()
 {
@@ -1457,10 +1507,8 @@ void PlotWidget::on_externallyResized(const QRectF& rect)
   if (isXYPlot())
   {
     emit undoableChange();
-  }
-  else
-  {
-    emit rectChanged(this, rect);
+  } else {
+      emit rectChanged(this, rect);
   }
 }
 
@@ -1476,7 +1524,22 @@ void PlotWidget::zoomOut(bool emit_signal)
   setZoomRectangle(_max_zoom_rect, emit_signal);
   replot();
 }
+void PlotWidget::zoomAuto(bool emit_signal)
+{
+    if (viewMode == Partial) {
+        if (_curve_list.size() == 0) {
+            QRectF rect(0, 1, 1, -1);
+            this->setZoomRectangle(rect, false);
+            return;
+        }
+        updateAutoZoomArea();
+        setZoomRectangle(_max_zoom_rect, emit_signal);
+        replot();
 
+    } else if (viewMode == Full) {
+        zoomOut(emit_signal);
+    }
+}
 void PlotWidget::on_zoomOutHorizontal_triggered(bool emit_signal)
 {
   updateMaximumZoomArea();
@@ -1486,6 +1549,30 @@ void PlotWidget::on_zoomOutHorizontal_triggered(bool emit_signal)
   act.setLeft(rangeX.min);
   act.setRight(rangeX.max);
   this->setZoomRectangle(act, emit_signal);
+}
+void PlotWidget::on_zoomExpandHorizontal_triggered(bool emit_signal)
+{
+    QRectF act = canvasBoundingRect();
+    auto rangeX = getMaximumRangeX();
+    float per_incretment = 0.1;
+    qDebug() << act.left() << "left of act" << endl;
+    qDebug() << act.right() << "right of act" << endl;
+
+    act.setLeft(act.left() - abs(act.right() - act.left()) * per_incretment);
+    act.setRight(act.right() + abs(act.right() - act.left()) * per_incretment);
+    this->setZoomRectangle(act, emit_signal);
+    replot();
+}
+
+void PlotWidget::on_zoomScaleDownHorizontal_triggered(bool emit_signal)
+{
+    QRectF act = canvasBoundingRect();
+    auto rangeX = getMaximumRangeX();
+    float per_incretment = 0.1;
+    act.setLeft(act.left() + abs(act.right() - act.left()) * per_incretment);
+    act.setRight(act.right() - abs(act.right() - act.left()) * per_incretment);
+    this->setZoomRectangle(act, emit_signal);
+    replot();
 }
 
 void PlotWidget::on_zoomOutVertical_triggered(bool emit_signal)

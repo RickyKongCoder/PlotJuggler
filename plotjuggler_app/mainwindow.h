@@ -249,7 +249,13 @@ private slots:
   void on_pushButtonSaveLayout_clicked();
   void on_pushButtonLoadDatafile_clicked();
 
-private:
+  void on_horExpandpushButton_pressed();
+
+  void on_horScaleDownpushButton_clicked();
+
+  void on_ViewModSetting_clicked();
+
+  private:
   QStringList readAllCurvesFromXML(QDomElement root_node);
   void loadAllPlugins(QStringList command_line_plugin_folders);
 };

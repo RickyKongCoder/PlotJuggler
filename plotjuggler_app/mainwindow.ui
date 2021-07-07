@@ -1298,6 +1298,35 @@
                    </widget>
                   </item>
                   <item>
+                   <widget class="QPushButton" name="ViewModSetting">
+                    <property name="text">
+                     <string>Partial View</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="horExpandpushButton">
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="resource.qrc">
+                      <normaloff>:/resources/arrows_exp.png</normaloff>:/resources/arrows_exp.png</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="horScaleDownpushButton">
+                    <property name="text">
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset resource="resource.qrc">
+                      <normaloff>:/resources/arrows_hor.png</normaloff>:/resources/arrows_hor.png</iconset>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
                    <widget class="QPushButton" name="pushButtonTimeTracker">
                     <property name="minimumSize">
                      <size>
@@ -1324,7 +1353,7 @@
                      <string>tt</string>
                     </property>
                     <property name="icon">
-                     <iconset>
+                     <iconset resource="resource.qrc">
                       <normaloff>:/style_light/line_tracker_1.png</normaloff>:/style_light/line_tracker_1.png</iconset>
                     </property>
                     <property name="iconSize">
@@ -1823,7 +1852,7 @@
   </action>
   <action name="actionReportBug">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resources/github.png</normaloff>:/resources/github.png</iconset>
    </property>
    <property name="text">
@@ -1884,7 +1913,7 @@
   </action>
   <action name="actionShare_the_love">
    <property name="icon">
-    <iconset>
+    <iconset resource="resource.qrc">
      <normaloff>:/resources/twitter.png</normaloff>:/resources/twitter.png</iconset>
    </property>
    <property name="text">
@@ -1910,6 +1939,9 @@
    <header location="global">menubar.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="resource.qrc"/>
+  <include location="resource.qrc"/>
+ </resources>
  <connections/>
 </ui>

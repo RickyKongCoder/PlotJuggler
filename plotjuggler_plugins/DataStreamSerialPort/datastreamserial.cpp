@@ -101,6 +101,7 @@ void DataStreamSerial::processMessage() {
 			}
 		}
 	}
+    emit dataReceived();
 }
 
 void DataStreamSerial::serialDisconnected() {

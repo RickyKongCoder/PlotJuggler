@@ -1,29 +1,29 @@
 #ifndef DragableWidget_H
 #define DragableWidget_H
 
-#include <map>
-#include <deque>
-#include <QObject>
-#include <QTextEdit>
-#include <QDomDocument>
-#include <QMessageBox>
-#include <QTime>
+#include "customtracker.h"
+#include "plotlegend.h"
 #include "plotmagnifier.h"
 #include "plotzoomer.h"
+#include "qwt_legend.h"
 #include "qwt_plot.h"
 #include "qwt_plot_curve.h"
 #include "qwt_plot_grid.h"
-#include "qwt_symbol.h"
-#include "qwt_legend.h"
-#include "qwt_plot_rescaler.h"
-#include "qwt_plot_panner.h"
 #include "qwt_plot_legenditem.h"
+#include "qwt_plot_panner.h"
+#include "qwt_plot_rescaler.h"
+#include "qwt_symbol.h"
 #include "timeseries_qwt.h"
-#include "customtracker.h"
-#include "transforms/transform_selector.h"
 #include "transforms/custom_function.h"
-#include "plotlegend.h"
-
+#include "transforms/transform_selector.h"
+#include <deque>
+#include <map>
+#include <QDomDocument>
+#include <QMessageBox>
+#include <QObject>
+#include <QTextEdit>
+#include <QTime>
+typedef enum { Partial, Full } ViewMode;
 class PlotWidget : public QwtPlot
 {
   Q_OBJECT
@@ -37,7 +37,7 @@ public:
     QwtPlotMarker* marker;
   };
 
-  PlotWidget(PlotDataMapRef& datamap, QWidget* parent = nullptr);
+  PlotWidget(PlotDataMapRef &datamap, QWidget *parent = nullptr);
 
   void setContextMenuEnabled(bool enabled);
 
@@ -56,7 +56,9 @@ public:
   QDomElement xmlSaveState(QDomDocument& doc) const;
 
   bool xmlLoadState(QDomElement& element);
-
+  void setViewMode(ViewMode mode) { viewMode = mode; }
+  ViewMode getViewMode(ViewMode mode) const { return viewMode; };
+  void toggleViewMode() { viewMode = (viewMode == Full) ? Partial : Full; }
   Range getMaximumRangeX() const;
 
   Range getMaximumRangeY(Range range_X) const;
@@ -154,10 +156,13 @@ public slots:
   void on_panned(int dx, int dy);
 
   void zoomOut(bool emit_signal);
+  void zoomAuto(bool emit_signal);
 
   void on_zoomOutHorizontal_triggered(bool emit_signal = true);
 
   void on_zoomOutVertical_triggered(bool emit_signal = true);
+  void on_zoomExpandHorizontal_triggered(bool emit_signal = true);
+  void on_zoomScaleDownHorizontal_triggered(bool emit_signal = true);
 
   void activateLegend(bool activate);
 
@@ -210,7 +215,9 @@ private:
 
   QAction* _action_zoomOutMaximum;
   QAction* _action_zoomOutHorizontally;
-  QAction* _action_zoomOutVertically;
+  QAction *_action_zoomExpandHorizontally;
+  QAction *_action_zoomScaleDownHorizontally;
+  QAction *_action_zoomOutVertically;
   QAction* _action_saveToFile;
   QAction* _action_copy;
   QAction* _action_paste;
@@ -224,6 +231,8 @@ private:
   CurveTracker* _tracker;
   PlotLegend* _legend;
   QwtPlotGrid* _grid;
+  float plot_autoXWidth = 30;
+  ViewMode viewMode = Partial;
 
   bool _use_date_time_scale;
 
@@ -280,6 +289,7 @@ private:
 
   void transformCustomCurves();
   void updateMaximumZoomArea();
+  void updateAutoZoomArea();
   void rescaleEqualAxisScaling();
   void overrideCursonMove();
 };

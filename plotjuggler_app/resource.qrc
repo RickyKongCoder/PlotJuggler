@@ -275,5 +275,7 @@
         <file>cheatsheet/img/tutorial_layout.png</file>
         <file>resources/svg/trash.svg</file>
         <file>resources/svg/clear.svg</file>
+        <file>resources/arrows_exp.png</file>
+        <file>resources/arrows_hor.png</file>
     </qresource>
 </RCC>
