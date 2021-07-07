@@ -24,26 +24,26 @@
 #include "transforms/custom_function.h"
 #include "transforms/function_editor.h"
 
+#include "logpanel.h"
 #include "ui_mainwindow.h"
 
 class MainWindow : public QMainWindow
 {
   Q_OBJECT
 
-public:
-  explicit MainWindow(const QCommandLineParser& commandline_parser, QWidget* parent = nullptr);
+  public:
+  explicit MainWindow(const QCommandLineParser &commandline_parser, QWidget *parent = nullptr);
 
   ~MainWindow();
 
   bool loadLayoutFromFile(QString filename);
   bool loadDataFromFiles(QStringList filenames);
-  bool loadDataFromFile(const FileLoadInfo& info);
-
+  bool loadDataFromFile(const FileLoadInfo &info);
 
   void stopStreamingPlugin();
   void startStreamingPlugin(QString streamer_name);
 
-public slots:
+  public slots:
 
   void resizeEvent(QResizeEvent*);
   // Undo - Redo
@@ -132,10 +132,10 @@ private:
   std::map<CurveTracker::Parameter, QIcon> _tracker_button_icons;
 
   MonitoredValue _time_offset;
-
+  LogPanel *logpanel;
   QTimer* _replot_timer;
   QTimer* _publish_timer;
-  QTimer* _tracker_delaty_timer;
+  QTimer *_tracker_delaty_timer;
 
   QDateTime _prev_publish_time;
 
@@ -252,8 +252,6 @@ private slots:
   void on_horExpandpushButton_pressed();
 
   void on_horScaleDownpushButton_clicked();
-
-  void on_ViewModSetting_clicked();
 
   private:
   QStringList readAllCurvesFromXML(QDomElement root_node);

@@ -37,7 +37,7 @@ CurveListPanel::CurveListPanel(PlotDataMapRef& mapped_plot_data,
   ui->setupUi(this);
 
   setFocusPolicy(Qt::ClickFocus);
-
+  //test
   _tree_view->setObjectName("curveTreeView");
   _custom_view->setObjectName("curveCustomView");
 

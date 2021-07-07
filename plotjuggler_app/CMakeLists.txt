@@ -18,6 +18,7 @@ QT5_WRAP_UI ( UI_SRC
 
     plot_docker_toolbar.ui
     plotwidget_editor.ui
+    logpanel.ui
 
     transforms/function_editor.ui
     transforms/function_editor_help.ui
@@ -27,7 +28,6 @@ QT5_WRAP_UI ( UI_SRC
     transforms/moving_average_filter.ui
     transforms/outlier_removal.ui
     transforms/integral_transform.ui
-
     cheatsheet/cheatsheet_dialog.ui
     )
 
@@ -48,6 +48,7 @@ SET( PLOtJUGGLER_SRC
     new_release_dialog.cpp
     plotlegend.cpp
     plotwidget.cpp
+    logpanel.cpp
     plotwidget_editor.cpp
     plotwidget_transforms.cpp
     plot_docker.cpp
@@ -79,6 +80,7 @@ SET( PLOtJUGGLER_SRC
 
     mainwindow.h
     realslider.h
+    logpanel.h
 
     nlohmann_parsers.cpp
     )

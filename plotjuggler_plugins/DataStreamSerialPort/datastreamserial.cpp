@@ -87,9 +87,9 @@ void DataStreamSerial::processMessage() {
 			double time = lst.at(1).toDouble();
 			double value = lst.at(2).toDouble();
 
-			auto& serial_numeric_plots = dataMap().numeric;
+            auto &serial_numeric_plots = dataMap().numeric; //
 
-			const std::string data_name_str = key.toStdString();
+            const std::string data_name_str = key.toStdString();
 			auto target_plotIt = serial_numeric_plots.find(data_name_str);
 
 			if (target_plotIt == serial_numeric_plots.end()) {

@@ -43,7 +43,9 @@
 #include "stylesheet.h"
 #include "dummy_data.h"
 
+#include "logpanel.h"
 #include "ui_aboutdialog.h"
+
 #include "ui_support_dialog.h"
 #include "preferences_dialog.h"
 #include "nlohmann_parsers.h"
@@ -57,24 +59,16 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #endif
 
-
-
-MainWindow::MainWindow(const QCommandLineParser& commandline_parser, QWidget* parent)
-  : QMainWindow(parent)
-  , ui(new Ui::MainWindow)
-  , _undo_shortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this)
-  , _redo_shortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this)
-  , _fullscreen_shortcut(Qt::Key_F10, this)
-  , _streaming_shortcut(QKeySequence(Qt::CTRL + Qt::Key_Space), this)
-  , _playback_shotcut(Qt::Key_Space, this)
-  , _minimized(false)
-  , _active_streamer_plugin(nullptr)
-  , _disable_undo_logging(false)
-  , _tracker_time(0)
-  , _tracker_param(CurveTracker::VALUE)
-  , _labels_status(LabelStatus::RIGHT)
-  , _recent_data_files(new QMenu())
-  ,_recent_layout_files(new QMenu())
+MainWindow::MainWindow(const QCommandLineParser &commandline_parser, QWidget *parent)
+    : QMainWindow(parent), ui(new Ui::MainWindow),
+      _undo_shortcut(QKeySequence(Qt::CTRL + Qt::Key_Z), this),
+      _redo_shortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_Z), this),
+      _fullscreen_shortcut(Qt::Key_F10, this),
+      _streaming_shortcut(QKeySequence(Qt::CTRL + Qt::Key_Space), this),
+      _playback_shotcut(Qt::Key_Space, this), _minimized(false), _active_streamer_plugin(nullptr),
+      _disable_undo_logging(false), _tracker_time(0), _tracker_param(CurveTracker::VALUE),
+      _labels_status(LabelStatus::RIGHT), _recent_data_files(new QMenu()),
+      _recent_layout_files(new QMenu()), logpanel(new LogPanel(this))
 {
   QLocale::setDefault(QLocale::c());  // set as default
 
@@ -180,7 +174,8 @@ MainWindow::MainWindow(const QCommandLineParser& commandline_parser, QWidget* pa
           &TabbedPlotWidget::on_stylesheetChanged);
 
   ui->plottingLayout->insertWidget(0, _main_tabbed_widget, 1);
-  ui->leftLayout->addWidget(_curvelist_widget,1);
+  ui->leftLayout->addWidget(_curvelist_widget, 3);
+  ui->leftLayout->addWidget(logpanel, 2);
 
   ui->mainSplitter->setCollapsible(0, true);
   ui->mainSplitter->setStretchFactor(0, 2);
@@ -2035,7 +2030,6 @@ void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
         }
       } else {
           PlotDocker *matrix = it.second->currentTab();
-
           matrix->zoomAuto(); // includes replot
       }
     }
@@ -3019,13 +3013,6 @@ void MainWindow::on_horExpandpushButton_pressed()
 void MainWindow::on_horScaleDownpushButton_clicked()
 {
     auto visitor = [=](PlotWidget *plot) { plot->on_zoomScaleDownHorizontal_triggered(false); };
-    this->forEachWidget(visitor);
-    onUndoableChange();
-}
-
-void MainWindow::on_ViewModSetting_clicked()
-{
-    auto visitor = [=](PlotWidget *plot) { plot->toggleViewMode(); };
     this->forEachWidget(visitor);
     onUndoableChange();
 }

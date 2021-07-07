@@ -232,7 +232,7 @@ private:
   PlotLegend* _legend;
   QwtPlotGrid* _grid;
   float plot_autoXWidth = 30;
-  ViewMode viewMode = Partial;
+  ViewMode viewMode = Full; //Change Mode
 
   bool _use_date_time_scale;
 
