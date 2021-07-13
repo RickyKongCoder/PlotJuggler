@@ -129,8 +129,10 @@ MainWindow::MainWindow(const QCommandLineParser &commandline_parser, QWidget *pa
   connect(this, &MainWindow::stylesheetChanged,
           this, &MainWindow::on_stylesheetChanged);
 
-  connect(this, &MainWindow::stylesheetChanged,
-          _curvelist_widget, &CurveListPanel::on_stylesheetChanged);
+  connect(this,
+          &MainWindow::stylesheetChanged,
+          _curvelist_widget,
+          &CurveListPanel::on_stylesheetChanged);
 
   connect(_curvelist_widget, &CurveListPanel::hiddenItemsChanged,
           this, &MainWindow::onUpdateLeftTableValues);
@@ -315,7 +317,6 @@ MainWindow::MainWindow(const QCommandLineParser &commandline_parser, QWidget *pa
   _message_parser_factory.insert( {"CBOR", std::make_shared<CBOR_ParserCreator>() });
   _message_parser_factory.insert( {"BSON", std::make_shared<BSON_ParserCreator>() });
   _message_parser_factory.insert( {"MessagePack", std::make_shared<MessagePack_ParserCreator>() });
-
 }
 
 MainWindow::~MainWindow()

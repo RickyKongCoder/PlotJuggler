@@ -8,9 +8,8 @@ bool NlohmannParser::parseMessageImpl(double &timestamp)
     if (_use_message_stamp){
 
         auto ts = _json.find("timestamp");
-        if( ts != _json.end() && ts.value().is_number())
-        {
-           timestamp = ts.value().get<double>();
+        if (ts != _json.end() && ts.value().is_number()) {
+            timestamp = ts.value().get<double>();
         }
     }
 

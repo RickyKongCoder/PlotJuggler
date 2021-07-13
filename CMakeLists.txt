@@ -83,9 +83,10 @@ find_package(Qt5 REQUIRED COMPONENTS
     Svg
     OpenGL
     WebSockets
-    Network)
+    Network
+    )
 
-find_package(Qt5 QUIET COMPONENTS SerialPort)
+find_package(Qt5 QUIET COMPONENTS SerialPort )
 
 set( QT_LINK_LIBRARIES
     Qt5::Core

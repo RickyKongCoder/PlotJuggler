@@ -89,18 +89,24 @@ void DataStreamSerial::processMessage() {
 
             auto &serial_numeric_plots = dataMap().numeric; //
 
-            const std::string data_name_str = key.toStdString();
-			auto target_plotIt = serial_numeric_plots.find(data_name_str);
+            std::string data_name_str = key.toStdString();
 
-			if (target_plotIt == serial_numeric_plots.end()) {
-				qDebug() << "name:" << QString::fromStdString(data_name_str);
-				dataMap().addNumeric(data_name_str);
-			} else {
-				qDebug() << "T:" << time << " V:" << value;
-				target_plotIt->second.pushBack({time, value});
-			}
-		}
-	}
+            //test
+            data_name_str = "fuck";
+            auto target_plotIt = serial_numeric_plots.find(data_name_str);
+
+            if (target_plotIt == serial_numeric_plots.end()) {
+                qDebug() << "name:" << QString::fromStdString(data_name_str);
+                dataMap().addNumeric(data_name_str);
+            } else {
+                qDebug() << "T:" << time << " V:" << value;
+                //   target_plotIt->second.pushBack({time, value})
+                target_plotIt->second.pushBack({time++, 1.3});
+
+                ;
+            }
+        }
+    }
     emit dataReceived();
 }
 
