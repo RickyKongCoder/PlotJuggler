@@ -92,7 +92,6 @@ void DataStreamSerial::processMessage() {
             std::string data_name_str = key.toStdString();
 
             //test
-            data_name_str = "fuck";
             auto target_plotIt = serial_numeric_plots.find(data_name_str);
 
             if (target_plotIt == serial_numeric_plots.end()) {
@@ -100,10 +99,10 @@ void DataStreamSerial::processMessage() {
                 dataMap().addNumeric(data_name_str);
             } else {
                 qDebug() << "T:" << time << " V:" << value;
-                //   target_plotIt->second.pushBack({time, value})
-                target_plotIt->second.pushBack({time++, 1.3});
+                target_plotIt->second.pushBack({time, value})
+                    //     target_plotIt->second.pushBack({time++, 1.3});
 
-                ;
+                    ;
             }
         }
     }

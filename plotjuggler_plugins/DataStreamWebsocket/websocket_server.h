@@ -36,10 +36,21 @@ typedef enum {
     INIT,
     READY,
     PROC_INIT,
-    PROC_VALUE
+    TRANSFER
 
 } ProcessState;
-typedef enum { ID, STRLEN, VAR_NAME, TYPE, ENUMNAME, ENUMELEM } ProcessSubstate;
+typedef enum {
+    ID,
+    STRLEN,
+    VAR_NAME,
+    TYPE,
+    ENUMNAME,
+    ENUMELEM,
+    END_INIT,
+    ID_TRAN,
+    TIME,
+    DATABYTE
+} ProcessSubstate;
 
 using namespace PJ;
 
@@ -114,8 +125,9 @@ public:
   ProcessState pstate = INIT;
   QByteArray waitready_proc(QByteArray, WebSocket *);
   QByteArray waitinit_cyclproc(QByteArray, WebSocket *);
-  QByteArray initcycl_proc(QByteArray, WebSocket *);
-
+  bool initcycl_proc(QByteArray, WebSocket *);
+  bool procc_data(QByteArray, WebSocket *);
+  //  QByteArray plot_raw_data(, WebSocket *);
   private slots:
   void onNewConnection();
   void processMessage(QString message);

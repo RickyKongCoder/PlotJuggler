@@ -1,4 +1,4 @@
-/*Wensocket PlotJuggler Plugin license(Faircode, Davide Faconti)
+﻿/*Wensocket PlotJuggler Plugin license(Faircode, Davide Faconti)
 
 Copyright(C) 2018 Philippe Gauthier - ISIR - UPMC
 Copyright(C) 2020 Davide Faconti
@@ -14,8 +14,11 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 */
 #include "websocket_server.h"
 #include "ObjectInfo.h"
+#include "bytesConversion.h"
+#include "ui_websocket_server.h"
 #include <chrono>
 #include <mutex>
+#include <string>
 #include <QDebug>
 #include <QDialog>
 #include <QFile>
@@ -24,11 +27,71 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 #include <QSettings>
 #include <QTextStream>
 #include <QWebSocket>
-
-#include "ui_websocket_server.h"
 #define Init_byte '/'
+#define end_Init_byte '@'
+#define start_transfer_byte '*'
 #define ready_byte '+'
 #define init_start_byte '&'
+#define time_length 4
+
+//void bytesToFloat(uint8_t *bytes, int size, float &f)
+//{
+//    if (is_big_endian()) {
+//        memcpy(&f, &bytes, 4);
+//    } else {
+//        uint32_t bytes4 = 0;
+//        memcpy(&bytes4, bytes, size);
+//        qDebug() << hex;
+//        qDebug() << "bytes4 real:" << hex << bytes4;
+//        uint32_t num = ((bytes4 & 0xFF000000) >> 24) + ((bytes4 & 0x00FF0000) >> 8)
+//                       + ((bytes4 & 0x0000FF00) << 8) + ((bytes4 & 0x000000FF) << 24);
+//        qDebug() << "bytes4 3 " << ((bytes4 & 0xFF000000) >> 24);
+//        qDebug() << "bytes4 2 " << ((bytes4 & 0x00FF0000) >> 8);
+//        qDebug() << "bytes4 1 " << ((bytes4 & 0x0000FF00) << 8);
+//        qDebug() << "bytes4 0 " << ((bytes4 & 0x000000FF) << 24);
+//        memcpy(&f, &num, size);
+//    }
+//}
+//template<typename T>
+//T qBytes4Convert(void *bytes, T &f)
+//{
+//    //it works for float so it should workd for other
+//    if (is_big_endian()) {
+//        memcpy(&f, &bytes, 4);
+//    } else {
+//        uint32_t bytes4 = 0;
+//        memcpy(&bytes4, bytes, 4);
+//        qDebug() << hex;
+//        //qDebug()<<"bytes4 real:"<<hex<<bytes4<<endl;
+//        uint32_t num = ((bytes4 & 0xFF000000) >> 24) + ((bytes4 & 0x00FF0000) >> 8)
+//                       + ((bytes4 & 0x0000FF00) << 8) + ((bytes4 & 0x000000FF) << 24);
+//        qDebug() << "bytes4 3 " << ((bytes4 & 0xFF000000) >> 24);
+//        qDebug() << "bytes4 2 " << ((bytes4 & 0x00FF0000) >> 8);
+//        qDebug() << "bytes4 1 " << ((bytes4 & 0x0000FF00) << 8);
+//        qDebug() << "bytes4 0 " << ((bytes4 & 0x000000FF) << 24);
+//        memcpy(&f, &num, 4);
+//    }
+//    return f;
+//}
+//template<typename T>
+//T qBytes2Convert(void *bytes, T &f)
+//{
+//    //it works for float so it should workd for other
+//    if (is_big_endian()) {
+//        memcpy(&f, &bytes, 2);
+//    } else {
+//        uint32_t bytes4 = 0;
+//        memcpy(&bytes4, bytes, 2);
+//        qDebug() << hex;
+//        //qDebug()<<"bytes4 real:"<<hex<<bytes4<<endl;
+//        uint32_t num = ((bytes4 & 0xFF000000) >> 24) + ((bytes4 & 0x00FF0000) >> 8)
+//                       + ((bytes4 & 0x0000FF00) << 8) + ((bytes4 & 0x000000FF) << 24);
+//        qDebug() << "bytes2 1 " << ((bytes4 & 0x00FF) >> 8) << endl;
+//        qDebug() << "bytes2 0 " << ((bytes4 & 0xFF00) << 8) << endl;
+//        memcpy(&f, &num, 2);
+//    }
+//    return f;
+//}
 
 class WebsocketDialog : public QDialog
 {
@@ -173,7 +236,8 @@ void WebsocketServer::onNewConnection()
     qDebug() << "New connection with ip" << _server.serverAddress() << endl;
     qDebug() << "New connection with ip" << _server.serverPort() << endl;
     qDebug() << "I sent Text" << Init_byte << endl;
-    pSocket->get()->sendTextMessage("FUCK ME");
+    QByteArray message = QString("0000000000000000000000000").toLocal8Bit();
+    pSocket->get()->sendBinaryMessage(message);
     _clients << pSocket;
 }
 
@@ -242,23 +306,33 @@ QByteArray WebsocketServer::waitinit_cyclproc(QByteArray message, WebSocket *pSo
 //    }
 //}
 
-QByteArray WebsocketServer::initcycl_proc(QByteArray message, WebSocket *pSocket)
+bool WebsocketServer::initcycl_proc(QByteArray message, WebSocket *pSocket)
 {
     uint8_t strlen = 0;
-    ObjectInfo *info = new ObjectInfo();
+    ObjectInfo *info;
     ENUMTYPE *eType;
     QString enum_name = "";
+    bool enum_stored = 0;
+    uint8_t enum_index = 0;
     for (QByteArray::const_iterator iter = message.begin(); iter != message.end(); iter++) {
+        if (*iter == end_Init_byte) {
+            pSocket->proc_state = END_INIT;
+            pSocket->prev_state = END_INIT;
+            QByteArray message = QString("/").toLocal8Bit(); //send bitch
+            pSocket->get()->sendBinaryMessage(message);
+            //     return message;
+        }
         switch (pSocket->proc_state) {
         case ID:
+            info = new ObjectInfo();
             info->setId(*iter);
-            qDebug() << "Id:" << uint8_t(*iter) << endl;
+            qDebug() << "Id:" << uint8_t(*iter);
             pSocket->proc_state = STRLEN; //
             pSocket->prev_state = ID;
             break;
         case STRLEN:
             strlen = *iter;
-            qDebug() << "Getlength:" << strlen << endl;
+            qDebug() << "Getlength:" << strlen;
             if (pSocket->prev_state == ID) {
                 pSocket->proc_state = VAR_NAME;
             } else if (pSocket->prev_state == VAR_NAME) {
@@ -283,28 +357,41 @@ QByteArray WebsocketServer::initcycl_proc(QByteArray message, WebSocket *pSocket
             //I should get 1 bytes integer here
             qDebug() << "Received variable type" << (uint8_t(*iter));
             pSocket->proc_state = ID;
+            info->setTypeMem((ObjectType)(*iter));
+            info->setSize((ObjectType)(*iter));
+            pSocket->get_objsRef().insert(
+                pair<uint8_t, ObjectInfo *>(info->getId(), info)); //INSERT THE VARIABLE HERE
+
             if ((ObjectType)(uint8_t) *iter == ENUMTYPE_) {
                 qDebug() << "found enum type" << endl;
                 pSocket->prev_state = TYPE;
                 pSocket->proc_state = STRLEN;
-                info->setType(ENUMTYPE_);
             }
             break;
         case ENUMNAME: //To do is test if enum name works
+            pSocket->prev_state = ENUMNAME;
             enum_name = message.mid(iter - message.begin(), strlen);
             qDebug() << "Received ENUM Name" << enum_name;
             info->set_enumName(enum_name);
-            if (pSocket->get_enumRef().find(enum_name) == pSocket->get_enumRef().end()) {
-                eType = new ENUMTYPE;
-                pSocket->get_enumRef().insert(std::pair<QString, ENUMTYPE *>(enum_name, eType));
-            }
+            enum_stored = (pSocket->get_enumRef().find(info->getName())
+                           != pSocket->get_enumRef().end());
             iter = std::next(iter, strlen - 1);
 
-            pSocket->proc_state = STRLEN;
-            pSocket->prev_state = ENUMNAME;
+            if (enum_stored) {
+                pSocket->proc_state = ID;
+                break;
+
+            } else {
+                eType = new ENUMTYPE{enum_name};
+                pSocket->proc_state = STRLEN;
+                pSocket->get_enumRef().insert(std::pair<QString, ENUMTYPE *>(eType->name, eType));
+                break;
+            }
             break;
         case ENUMELEM:
             qDebug() << "Received ENUMELEM" << message.mid(iter - message.begin(), strlen);
+            pSocket->get_enumRef()[enum_name]->enum_Map.insert(
+                pair<uint8_t, QString>(enum_index, message.mid(iter - message.begin(), strlen)));
             iter = std::next(iter, strlen - 1);
             if (*std::next(iter, 1) == '/') { //detect end signal
                 pSocket->proc_state = ID;
@@ -315,34 +402,115 @@ QByteArray WebsocketServer::initcycl_proc(QByteArray message, WebSocket *pSocket
             }
             pSocket->proc_state = STRLEN;
             pSocket->prev_state = ENUMELEM;
-
+            enum_index++;
             //will refractor later BITCH 8=======================================D!!!!!
             break;
         default:
             break;
         }
     }
+
+    //debug show all objs
+    for (map<uint8_t, ObjectInfo *>::const_iterator iter = pSocket->get_objsRef().begin();
+         iter != pSocket->get_objsRef().end();
+         iter++) {
+        qDebug() << "ObjectInfos Name:" << iter->second->getName() << "|";
+        qDebug() << "ObjectInfos Type:" << iter->second->getType() << "|";
+        qDebug() << "ObjectInfos id:" << iter->second->getId() << "|";
+    }
+    //debug show all enum elements
+    for (map<QString, ENUMTYPE *>::const_iterator enumref = pSocket->get_enumRef().begin();
+         enumref != pSocket->get_enumRef().end();
+         enumref++) {
+        qDebug() << "Enum Name:" << enumref->second->name << "|";
+        for (map<uint8_t, QString>::const_iterator iter = enumref->second->enum_Map.begin();
+             iter != enumref->second->enum_Map.end();
+             iter++) {
+            qDebug() << "Enum Element id:" << iter->first << "|";
+            qDebug() << "Enum Element Name:" << iter->second << "|";
+        }
+    }
+    pSocket->proc_state = TIME;
+    return true;
 }
+
+bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
+{
+    std::string var_name;
+    ObjectType type;
+    float time;
+    uint8_t id = 0;
+    ObjectInfo *obj_ptr;
+    uint8_t size = 0;
+    for (QByteArray::const_iterator iter = message.begin(); iter != message.end(); iter++) {
+        switch (pSocket->proc_state) {
+        case TIME:
+            qBytes4Convert(message.mid(iter - message.begin(), time_length).data(),
+                           &time); //memcpy time
+            iter = next(iter, time_length - 1);
+            qDebug() << "Received Time" << time;
+            pSocket->proc_state = ID_TRAN;
+            break;
+        case ID_TRAN: //id -> var_name
+            id = *iter;
+            qDebug() << "Received ID Tran" << id;
+            obj_ptr = pSocket->get_objsRef()[*iter];
+            var_name = obj_ptr->getName().toStdString();
+            type = obj_ptr->getType();
+            pSocket->proc_state = DATABYTE;
+            break;
+        case DATABYTE:
+            size = obj_ptr->getSize();
+            if (!obj_ptr->isobj()) {
+                auto &serial_numeric_plots = dataMap().numeric;
+                auto target_plotIt = serial_numeric_plots.find(var_name);
+
+                if (target_plotIt == serial_numeric_plots.end()) {
+                    qDebug() << "name:" << QString::fromStdString(var_name);
+                    dataMap().addNumeric(var_name);
+                }
+                target_plotIt = serial_numeric_plots.find(var_name);
+                char *array = message.mid(iter - message.begin(), size).data();
+                obj_ptr->setBytestoValue(array);
+                target_plotIt->second.pushBack({(double) time, obj_ptr->getValueInDouble()});
+
+            } else {
+                //plot_complicated shits like OBJS,ENUMS,BLAH BLAH B
+            }
+            pSocket->proc_state = TIME;
+            iter = next(iter, size - 1);
+            break;
+        default:
+            break;
+        }
+    }
+    return true;
+}
+
 void WebsocketServer::processBinaryMessage(QByteArray message, WebSocket *qsocket)
 {
     std::lock_guard<std::mutex> lock(mutex());
 
-    //    if (!serial.canReadLine())
-    //        return;
-    // just for test
-    // std::string data_name_str = "fuck";
-    // auto target_plotIt = dataMap().numeric.find(data_name_str);
+    //    QByteArray Test;
+    //    Test.append(0x41);
+    //    Test.append(0x25);
+    //    Test.append(0x53);
+    //    Test.append(0xF8);
+    //    float f = 0;
+    //    qBytes4Convert(Test.data(), &f);
+    //    qDebug() << "floaing point number" << f << endl;
     qDebug() << "Message byte array" << message << endl;
     QByteArray pass;
+
     switch (pstate) {
     case INIT:
         pass = waitready_proc(message, qsocket);
         pass = waitinit_cyclproc(pass, qsocket);
-        pass = initcycl_proc(pass, qsocket);
-        pstate = PROC_VALUE;
+        pstate = (initcycl_proc(pass, qsocket)) ? TRANSFER : INIT;
         qDebug() << pass << "message for now" << endl;
         break;
-    case PROC_VALUE:
+    case TRANSFER: //for now only consider big endian
+        procc_data(message, qsocket);
         break;
     default:
         break;

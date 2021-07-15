@@ -1,6 +1,6 @@
 
 
-find_package(Qt5 QUIET COMPONENTS WebSockets ObjectInfo.h)
+find_package(Qt5 QUIET COMPONENTS WebSockets ObjectInfo.h bytesConversion.h bytesConversion.cpp)
 
 if( NOT Qt5WebSockets_FOUND)
     message(STATUS "Can't find Qt5WebSockets in your system. Have you tried [sudo apt-get install libqt5websockets5-dev] ?")
@@ -13,7 +13,7 @@ else()
 
     QT5_WRAP_UI ( UI_SRC  websocket_server.ui  )
 
-    SET( SRC websocket_server.cpp ObjectInfo.h ObjectInfo.cpp)
+    SET( SRC websocket_server.cpp ObjectInfo.h ObjectInfo.cpp  bytesConversion.h bytesConversion.cpp)
 
     add_library(DataStreamWebSocket SHARED ${SRC} ${UI_SRC}
 
