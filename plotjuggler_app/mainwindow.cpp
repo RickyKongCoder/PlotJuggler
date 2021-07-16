@@ -3017,3 +3017,5 @@ void MainWindow::on_horScaleDownpushButton_clicked()
     this->forEachWidget(visitor);
     onUndoableChange();
 }
+
+void MainWindow::on_pushButton_pressed() {}

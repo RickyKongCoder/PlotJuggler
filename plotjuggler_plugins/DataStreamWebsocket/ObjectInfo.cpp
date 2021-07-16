@@ -19,12 +19,23 @@ void ObjectInfo::setTypeMem(ObjectType type)
 }
 void ObjectInfo::setBytestoValue(char *array)
 {
-    if (size == 4) {
+    if (size == 8) {
+        qBytes8Convert(array, &value);
+    } else if (size == 4) {
         qBytes4Convert(array, &value);
     } else if (size == 2) {
         qBytes2Convert(array, &value);
+    } else if (size == 1) {
+        memcpy(&value, array, 1);
     }
-    qDebug() << "the float value " << value.f << endl;
+    qDebug() << "the float value " << value.f;
+    qDebug() << "the int8 value " << value.i8;
+    qDebug() << "the int16 value " << value.i16;
+    qDebug() << "the int32 value " << value.i8;
+    qDebug() << "the doube value " << value.d;
+
+    //    qDebug() << "the float value " << value.f << endl;
+    //    qDebug() << "the float value " << value.f << endl;
 }
 
 double ObjectInfo::getValueInDouble()
@@ -34,11 +45,11 @@ double ObjectInfo::getValueInDouble()
         qDebug() << "it is float" << endl;
         return (double) (this->value.f);
     case INT8_:
-        return this->value.i8;
+        return (double) this->value.i8;
     case INT16_:
-        return this->value.i16;
+        return (double) this->value.i16;
     case INT32_:
-        return this->value.i32;
+        return (double) this->value.i32;
     case DOUBLE64_:
         return this->value.d;
         break;

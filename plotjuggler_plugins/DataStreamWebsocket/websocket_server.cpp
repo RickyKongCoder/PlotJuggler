@@ -274,7 +274,7 @@ QByteArray WebsocketServer::waitready_proc(QByteArray message, WebSocket *pSocke
     for (QByteArray::const_iterator iter = message.begin(); iter != message.end(); iter++) {
         if (*iter == Init_byte) {
             qDebug() << "find init signal" << endl;
-            pstate = READY;
+            pSocket->pstate = READY;
             message.remove(index, 1);
             QString str = QString(ready_byte);
             pSocket->get()->sendTextMessage(str);
@@ -291,7 +291,7 @@ QByteArray WebsocketServer::waitinit_cyclproc(QByteArray message, WebSocket *pSo
     for (QByteArray::const_iterator iter = message.begin(); iter != message.end(); iter++) {
         if (*iter == init_start_byte) {
             qDebug() << "find waitinit signal" << endl;
-            pstate = PROC_INIT;
+            pSocket->pstate = PROC_INIT;
             message.remove(index, 1);
             qDebug() << "this is message after waitinit_cyclproc" << index << " " << message;
             return message;
@@ -314,6 +314,7 @@ bool WebsocketServer::initcycl_proc(QByteArray message, WebSocket *pSocket)
     QString enum_name = "";
     bool enum_stored = 0;
     uint8_t enum_index = 0;
+    qDebug() << "INIT SHIT" << endl;
     for (QByteArray::const_iterator iter = message.begin(); iter != message.end(); iter++) {
         if (*iter == end_Init_byte) {
             pSocket->proc_state = END_INIT;
@@ -359,6 +360,8 @@ bool WebsocketServer::initcycl_proc(QByteArray message, WebSocket *pSocket)
             pSocket->proc_state = ID;
             info->setTypeMem((ObjectType)(*iter));
             info->setSize((ObjectType)(*iter));
+            qDebug() << "The Size of shit is : " << info->getSize() << endl;
+
             pSocket->get_objsRef().insert(
                 pair<uint8_t, ObjectInfo *>(info->getId(), info)); //INSERT THE VARIABLE HERE
 
@@ -442,6 +445,7 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
     uint8_t id = 0;
     ObjectInfo *obj_ptr;
     uint8_t size = 0;
+
     for (QByteArray::const_iterator iter = message.begin(); iter != message.end(); iter++) {
         switch (pSocket->proc_state) {
         case TIME:
@@ -461,6 +465,7 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
             break;
         case DATABYTE:
             size = obj_ptr->getSize();
+            qDebug() << "Tran var Size " << size << endl;
             if (!obj_ptr->isobj()) {
                 auto &serial_numeric_plots = dataMap().numeric;
                 auto target_plotIt = serial_numeric_plots.find(var_name);
@@ -471,7 +476,9 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
                 }
                 target_plotIt = serial_numeric_plots.find(var_name);
                 char *array = message.mid(iter - message.begin(), size).data();
-                obj_ptr->setBytestoValue(array);
+                qDebug() << "Data message" << message << endl;
+
+                obj_ptr->setBytestoValue(message.mid(iter - message.begin(), size).data());
                 target_plotIt->second.pushBack({(double) time, obj_ptr->getValueInDouble()});
 
             } else {
@@ -502,11 +509,11 @@ void WebsocketServer::processBinaryMessage(QByteArray message, WebSocket *qsocke
     qDebug() << "Message byte array" << message << endl;
     QByteArray pass;
 
-    switch (pstate) {
+    switch (qsocket->pstate) {
     case INIT:
         pass = waitready_proc(message, qsocket);
         pass = waitinit_cyclproc(pass, qsocket);
-        pstate = (initcycl_proc(pass, qsocket)) ? TRANSFER : INIT;
+        qsocket->pstate = (initcycl_proc(pass, qsocket)) ? TRANSFER : INIT;
         qDebug() << pass << "message for now" << endl;
         break;
     case TRANSFER: //for now only consider big endian

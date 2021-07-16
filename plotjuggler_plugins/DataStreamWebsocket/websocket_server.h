@@ -62,6 +62,7 @@ class WebSocket : public QObject
     std::map<QString, ENUMTYPE *> enums;
 
 public:
+    ProcessState pstate = INIT;
     ProcessSubstate proc_state = ID;
     ProcessSubstate prev_state = ID;
     explicit WebSocket(QWebSocket *web, QObject *parent = nullptr) : QObject(parent), websocket(web)
@@ -122,7 +123,7 @@ public:
   //std::map<QString, QWebSocket *> _clients;
   QWebSocketServer _server;
   PJ::MessageParserPtr _parser;
-  ProcessState pstate = INIT;
+  // ProcessState pstate = INIT;
   QByteArray waitready_proc(QByteArray, WebSocket *);
   QByteArray waitinit_cyclproc(QByteArray, WebSocket *);
   bool initcycl_proc(QByteArray, WebSocket *);

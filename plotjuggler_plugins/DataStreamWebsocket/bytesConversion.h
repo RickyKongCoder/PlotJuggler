@@ -12,6 +12,7 @@ bool is_big_endian();
 //T qBytes4Convert(void *bytes, T &f);
 //template<typename T>
 //T qBytes2Convert(void *bytes, T &f);
+void qBytes8Convert(void *bytes, void *f);
 void qBytes4Convert(void *bytes, void *f);
 void qBytes2Convert(void *bytes, void *f);
 

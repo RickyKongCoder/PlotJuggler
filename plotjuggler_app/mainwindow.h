@@ -253,6 +253,8 @@ private slots:
 
   void on_horScaleDownpushButton_clicked();
 
+  void on_pushButton_pressed();
+
   private:
   QStringList readAllCurvesFromXML(QDomElement root_node);
   void loadAllPlugins(QStringList command_line_plugin_folders);
