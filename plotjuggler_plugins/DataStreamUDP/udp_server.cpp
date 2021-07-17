@@ -172,29 +172,28 @@ void UDP_Server::processMessage()
   while (_udp_socket->hasPendingDatagrams()) {
 
     QNetworkDatagram datagram = _udp_socket->receiveDatagram();
-
+    qDebug() << "UDP" << datagram.data();
 
     using namespace std::chrono;
     auto ts = high_resolution_clock::now().time_since_epoch();
     double timestamp = 1e-6* double( duration_cast<microseconds>(ts).count() );
 
     QByteArray m = datagram.data();
-    MessageRef msg ( reinterpret_cast<uint8_t*>(m.data()), m.count() );    
-
+    MessageRef msg(reinterpret_cast<uint8_t *>(m.data()), m.count());
     try {
-      std::lock_guard<std::mutex> lock(mutex());
-      // important use the mutex to protect any access to the data
-      _parser->parseMessage(msg, timestamp);
-    } catch (std::exception& err)
-    {
-      QMessageBox::warning(nullptr,
-                           tr("UDP Server"),
-                           tr("Problem parsing the message. UDP Server will be stopped.\n%1").arg(err.what()),
-                           QMessageBox::Ok);
-      shutdown();
-      // notify the GUI
-      emit closed();
-      return;
+        std::lock_guard<std::mutex> lock(mutex());
+        // important use the mutex to protect any access to the data
+        _parser->parseMessage(msg, timestamp);
+    } catch (std::exception &err) {
+        QMessageBox::warning(nullptr,
+                             tr("UDP Server"),
+                             tr("Problem parsing the message. UDP Server will be stopped.\n%1")
+                                 .arg(err.what()),
+                             QMessageBox::Ok);
+        shutdown();
+        // notify the GUI
+        emit closed();
+        return;
     }
   }
   // notify the GUI

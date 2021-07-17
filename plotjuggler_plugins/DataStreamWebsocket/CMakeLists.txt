@@ -1,6 +1,6 @@
 
 
-find_package(Qt5 QUIET COMPONENTS WebSockets ObjectInfo.h bytesConversion.h bytesConversion.cpp)
+find_package(Qt5 QUIET COMPONENTS WebSockets ObjectInfo.h bytesConversion.h bytesConversion.cpp )
 
 if( NOT Qt5WebSockets_FOUND)
     message(STATUS "Can't find Qt5WebSockets in your system. Have you tried [sudo apt-get install libqt5websockets5-dev] ?")

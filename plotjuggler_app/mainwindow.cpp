@@ -1980,8 +1980,8 @@ void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
     for (const auto& str : move_ret.added_curves)
     {
       _curvelist_widget->addCurve(str);
+      //  _curvelist_widget->addCurve("FUCK PLOTJUGGLER");
     }
-
     if ( move_ret.curves_updated )
     {
       _curvelist_widget->refreshColumns();

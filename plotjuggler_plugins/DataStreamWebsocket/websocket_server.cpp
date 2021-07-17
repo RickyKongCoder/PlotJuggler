@@ -236,7 +236,7 @@ void WebsocketServer::onNewConnection()
     qDebug() << "New connection with ip" << _server.serverAddress() << endl;
     qDebug() << "New connection with ip" << _server.serverPort() << endl;
     qDebug() << "I sent Text" << Init_byte << endl;
-    QByteArray message = QString("0000000000000000000000000").toLocal8Bit();
+    QByteArray message = QString("*").toLocal8Bit();
     pSocket->get()->sendBinaryMessage(message);
     _clients << pSocket;
 }
@@ -445,7 +445,7 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
     uint8_t id = 0;
     ObjectInfo *obj_ptr;
     uint8_t size = 0;
-
+    PlotGroup::Ptr pltgrp_ptr;
     for (QByteArray::const_iterator iter = message.begin(); iter != message.end(); iter++) {
         switch (pSocket->proc_state) {
         case TIME:
@@ -477,20 +477,46 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
                 target_plotIt = serial_numeric_plots.find(var_name);
                 char *array = message.mid(iter - message.begin(), size).data();
                 qDebug() << "Data message" << message << endl;
-
                 obj_ptr->setBytestoValue(message.mid(iter - message.begin(), size).data());
                 target_plotIt->second.pushBack({(double) time, obj_ptr->getValueInDouble()});
 
             } else {
                 //plot_complicated shits like OBJS,ENUMS,BLAH BLAH B
+                auto &serial_numeric_plots = dataMap().numeric;
+                auto target_plotIt = serial_numeric_plots.find(var_name);
+
+                if (target_plotIt == serial_numeric_plots.end()) {
+                    qDebug() << "name:" << QString::fromStdString(var_name);
+                    //                    pltgrp_ptr = make_shared<PJ::PlotGroup>(PJ::PlotGroup{var_name});
+                    //for now assum only xytheta use here
+                    obj_ptr->addPlotNumeric(&dataMap());
+                }
+                target_plotIt = serial_numeric_plots.find(var_name);
+                char *array = message.mid(iter - message.begin(), size).data();
+                qDebug() << "Data message" << message << endl;
+                obj_ptr->setBytestoValue(message.mid(iter - message.begin(), size).data());
+                qDebug() << "x" << ((XYTheta *) obj_ptr->getValueRef())->x_pos << endl;
+                qDebug() << "y" << ((XYTheta *) obj_ptr->getValueRef())->y_pos << endl;
+                qDebug() << "theta" << ((XYTheta *) obj_ptr->getValueRef())->theta << endl;
+                double xyt[] = {double(((XYTheta *) obj_ptr->getValueRef())->x_pos),
+                                double(((XYTheta *) obj_ptr->getValueRef())->y_pos),
+                                double(((XYTheta *) obj_ptr->getValueRef())->theta)};
+                obj_ptr->updatePlotNumeric(&dataMap(), xyt, time);
+                //                pltgrp_ptr->setAttribute("x", ((XYTheta *) obj_ptr->getValueRef())->x_pos);
+                //                pltgrp_ptr->setAttribute("y", ((XYTheta *) obj_ptr->getValueRef())->y_pos);
+                //                pltgrp_ptr->setAttribute("theta", ((XYTheta *) obj_ptr->getValueRef())->theta);
+                // target_plotIt->second.get()->attributes();
+                //                target_plotIt->second
             }
-            pSocket->proc_state = TIME;
+            pSocket->proc_state = ID_TRAN;
             iter = next(iter, size - 1);
             break;
         default:
             break;
         }
     }
+    pSocket->proc_state = TIME;
+
     return true;
 }
 

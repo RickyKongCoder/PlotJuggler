@@ -1,5 +1,6 @@
 #ifndef OBJECTINFO_H
 #define OBJECTINFO_H
+#include <Plotjuggler/plotdata.h>
 #include <iostream>
 #include <iterator>
 #include <map>
@@ -73,7 +74,11 @@ public:
     void setSize(uint8_t size) { this->size = size; }
     void setSize(ObjectType type) { this->size = typeToSize(type); };
     void setBytestoValue(char *arry);
+    void *getValueRef() { return &value; };
+    void addPlotNumeric(PJ::PlotDataMapRef *datamap);
+    void updatePlotNumeric(PJ::PlotDataMapRef *datamap, double param[], double time);
     double getValueInDouble();
+
     ~ObjectInfo() {}
 };
 using var_t = std::variant<int8_t, int16_t, int32_t, float, double, XYTheta>;

@@ -99,16 +99,15 @@ void CurveListPanel::addCurve(const std::string &plot_name)
     return false;
   };
 
-  bool found =
-      FindInPlotData( _plot_data.numeric, plot_name ) ||
-      FindInPlotData( _plot_data.strings, plot_name );
-
+  bool found = FindInPlotData(_plot_data.numeric, plot_name)
+               || FindInPlotData(_plot_data.strings, plot_name);
   if( !found ) {
     return;
   }
 
   QString plot_id = QString::fromStdString( plot_name );
-  _tree_view->addItem(group_name, getTreeName( plot_id ), plot_id );
+  _tree_view->addItem(group_name, getTreeName(plot_id), plot_id);
+  //_tree_view->addItem("FUCK", getTreeName(plot_id), plot_id);
 
   _column_width_dirty = true;
 }

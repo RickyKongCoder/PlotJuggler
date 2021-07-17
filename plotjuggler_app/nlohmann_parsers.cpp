@@ -2,58 +2,58 @@
 
 #define FMT_HEADER_ONLY
 #include "fmt/format.h"
-
+#include <iostream>
+#include <QDebug>
+#include <QString>
 bool NlohmannParser::parseMessageImpl(double &timestamp)
 {
-    if (_use_message_stamp){
-
+    if (_use_message_stamp) {
         auto ts = _json.find("timestamp");
         if (ts != _json.end() && ts.value().is_number()) {
             timestamp = ts.value().get<double>();
         }
     }
 
-    std::function<void(const std::string&,  const nlohmann::json&)> flatten;
+    std::function<void(const std::string &, const nlohmann::json &)> flatten;
+    //   qDebug() << "running parseMessageImpl" << endl;
 
-    flatten =[&](const std::string& prefix,
-            const nlohmann::json& value)
-    {
-        if (value.empty()){
+    flatten = [&](const std::string &prefix, const nlohmann::json &value) {
+        if (value.empty()) {
             return;
         }
 
-        switch (value.type())
-        {
-        case nlohmann::detail::value_t::array:{
+        switch (value.type()) {
+        case nlohmann::detail::value_t::array: {
             // iterate array and use index as reference string
             for (std::size_t i = 0; i < value.size(); ++i) {
-                flatten( fmt::format("{}[{}]", prefix, i), value[i]);
+                flatten(fmt::format("{}[{}]", prefix, i), value[i]);
             }
             break;
         }
 
-        case nlohmann::detail::value_t::object:{
+        case nlohmann::detail::value_t::object: {
             // iterate object and use keys as reference string
-            for(const auto& element: value.items()) {
-                flatten( fmt::format("{}/{}", prefix, element.key()), element.value());
+            for (const auto &element : value.items()) {
+                flatten(fmt::format("{}/{}", prefix, element.key()), element.value());
+                //           qDebug() << QString::fromStdString(fmt::format("{}/{}", prefix, element.key()))
+                //                  << endl;
             }
             break;
         }
 
-        default:{
+        default: {
             double numeric_value = 0;
-            if( value.is_boolean()) {
+            if (value.is_boolean()) {
                 numeric_value = value.get<bool>();
-            }
-            else if( value.is_number()) {
+            } else if (value.is_number()) {
                 numeric_value = value.get<double>();
-            }
-            else{
+            } else {
                 return;
             }
+            //       qDebug() << "prefix to plot" << QString::fromStdString(prefix);
 
             auto plot_data = &(getSeries(prefix));
-            plot_data->pushBack( {timestamp, numeric_value} );
+            plot_data->pushBack({timestamp, numeric_value});
 
             break;
         }

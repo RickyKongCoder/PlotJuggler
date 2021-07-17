@@ -87,7 +87,6 @@ void CurveTreeView::addItem(const QString &group_name, const QString& tree_name,
     parts = group_parts + parts;
   }
 
-
   QTreeWidgetItem* tree_parent = this->invisibleRootItem();
 
   for (int i = 0; i < parts.size(); i++)

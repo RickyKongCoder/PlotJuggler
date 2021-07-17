@@ -10,6 +10,24 @@ bool is_big_endian(void)
 
     return bint.c[0] == 1;
 }
+
+void qNbytesConvert(void *bytes, void *f, int n)
+{
+    if (is_big_endian()) {
+        memcpy(f, &bytes, 8);
+    } else {
+        uint8_t bytes_arr[n];
+        memcpy(bytes_arr, bytes, n);
+        for (int i = 0; i < n / 2; i++) {
+            uint8_t b = bytes_arr[i];
+            bytes_arr[i] = bytes_arr[n - i - 1];
+
+            bytes_arr[n - i - 1] = b;
+        }
+        memcpy(f, bytes_arr, n);
+    }
+}
+
 void qBytes8Convert(void *bytes, void *f)
 {
     //it works for float so it should workd for other

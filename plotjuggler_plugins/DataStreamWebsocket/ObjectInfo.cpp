@@ -3,6 +3,7 @@
 #include "bytesConversion.h"
 #include "stdint.h"
 #include "variant"
+#include <PlotJuggler/plotdata.h>
 QVector<uint8_t> ObjSize = {TYPE_SIZE_MAP(GET_SIZE)};
 ObjectType ObjectInfo::getType()
 {
@@ -27,13 +28,22 @@ void ObjectInfo::setBytestoValue(char *array)
         qBytes2Convert(array, &value);
     } else if (size == 1) {
         memcpy(&value, array, 1);
+    } else if (type == XYTHETA_) {
+        memcpy(&value, array, 12);
+        qBytes4Convert(&value.xyt.x_pos, &value.xyt.x_pos);
+        qBytes4Convert(&value.xyt.y_pos, &value.xyt.y_pos);
+        qBytes4Convert(&value.xyt.theta, &value.xyt.theta);
+
+        //        memcpy(&value, array, size);
     }
     qDebug() << "the float value " << value.f;
     qDebug() << "the int8 value " << value.i8;
     qDebug() << "the int16 value " << value.i16;
     qDebug() << "the int32 value " << value.i8;
     qDebug() << "the doube value " << value.d;
-
+    qDebug() << "the XYTheta x " << value.xyt.x_pos;
+    qDebug() << "the XYTheta y " << value.xyt.y_pos;
+    qDebug() << "the XYTheta theta " << value.xyt.theta;
     //    qDebug() << "the float value " << value.f << endl;
     //    qDebug() << "the float value " << value.f << endl;
 }
@@ -79,6 +89,31 @@ void ObjectInfo::setId(uint8_t id)
 {
     this->id = id;
 }
+void ObjectInfo::addPlotNumeric(PJ::PlotDataMapRef *datamap)
+{
+    switch (type) {
+    case XYTHETA_:
+        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "x");
+        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "y");
+        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "theta");
+
+        break;
+    default:
+        break;
+    }
+}
+void ObjectInfo::updatePlotNumeric(PJ::PlotDataMapRef *datamap, double param[], double time)
+{
+    switch (type) {
+    case XYTHETA_:
+        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "x").pushBack({time, param[0]});
+        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "y").pushBack({time, param[1]});
+        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "theta")
+            .pushBack({time, param[2]});
+        break;
+    }
+}
+
 uint8_t ObjectInfo::getId()
 {
     return id;
