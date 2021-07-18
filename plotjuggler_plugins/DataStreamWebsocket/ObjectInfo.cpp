@@ -20,22 +20,30 @@ void ObjectInfo::setTypeMem(ObjectType type)
 }
 void ObjectInfo::setBytestoValue(char *array)
 {
-    if (size == 8) {
-        qBytes8Convert(array, &value);
-    } else if (size == 4) {
-        qBytes4Convert(array, &value);
-    } else if (size == 2) {
-        qBytes2Convert(array, &value);
-    } else if (size == 1) {
-        memcpy(&value, array, 1);
-    } else if (type == XYTHETA_) {
-        memcpy(&value, array, 12);
-        qBytes4Convert(&value.xyt.x_pos, &value.xyt.x_pos);
-        qBytes4Convert(&value.xyt.y_pos, &value.xyt.y_pos);
-        qBytes4Convert(&value.xyt.theta, &value.xyt.theta);
+    memcpy(&value, array, size);
+    //    if (size == 8) {
+    //        memcpy(&value, array, 8);
 
-        //        memcpy(&value, array, size);
-    }
+    //        //    qBytes8Convert(array, &value);
+    //    } else if (size == 4) {
+    //        memcpy(&value, array, 4);
+
+    //        //   qBytes4Convert(array, &value);
+    //    } else if (size == 2) {
+    //        memcpy(&value, array, 2);
+
+    //        //  qBytes2Convert(array, &value);
+    //    } else if (size == 1) {
+    //        memcpy(&value, array, 1);
+    //    } else if (type == XYTHETA_) {
+    //        memcpy(&value, array, 12);
+
+    //        //        qBytes4Convert(&value.xyt.x_pos, &value.xyt.x_pos);
+    //        //        qBytes4Convert(&value.xyt.y_pos, &value.xyt.y_pos);
+    //        //        qBytes4Convert(&value.xyt.theta, &value.xyt.theta);
+
+    //        //        memcpy(&value, array, size);
+    //    }
     qDebug() << "the float value " << value.f;
     qDebug() << "the int8 value " << value.i8;
     qDebug() << "the int16 value " << value.i16;
@@ -92,6 +100,13 @@ void ObjectInfo::setId(uint8_t id)
 void ObjectInfo::addPlotNumeric(PJ::PlotDataMapRef *datamap)
 {
     switch (type) {
+    case FLOAT_:
+    case INT8_:
+    case INT16_:
+    case INT32_:
+    case DOUBLE64_:
+        datamap->addNumeric(name.toStdString());
+        break;
     case XYTHETA_:
         datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "x");
         datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "y");
@@ -105,6 +120,12 @@ void ObjectInfo::addPlotNumeric(PJ::PlotDataMapRef *datamap)
 void ObjectInfo::updatePlotNumeric(PJ::PlotDataMapRef *datamap, double param[], double time)
 {
     switch (type) {
+    case FLOAT_:
+    case INT8_:
+    case INT16_:
+    case INT32_:
+    case DOUBLE64_:
+        break;
     case XYTHETA_:
         datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "x").pushBack({time, param[0]});
         datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "y").pushBack({time, param[1]});

@@ -17,6 +17,7 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 #include "bytesConversion.h"
 #include "ui_websocket_server.h"
 #include <chrono>
+#include <cstring>
 #include <mutex>
 #include <string>
 #include <QDebug>
@@ -27,6 +28,7 @@ OR OTHER DEALINGS IN THE SOFTWARE.
 #include <QSettings>
 #include <QTextStream>
 #include <QWebSocket>
+using namespace std;
 #define Init_byte '/'
 #define end_Init_byte '@'
 #define start_transfer_byte '*'
@@ -230,7 +232,10 @@ void WebsocketServer::shutdown()
 void WebsocketServer::onNewConnection()
 {
     WebSocket *pSocket = new WebSocket(_server.nextPendingConnection(), this);
-    //connect(pSocket, &QWebSocket::textMessageReceived, this, &WebsocketServer::processMessage);
+    connect(pSocket->get(),
+            &QWebSocket::textMessageReceived,
+            this,
+            &WebsocketServer::processMessage);
     connect(pSocket, &WebSocket::binaryReceived, this, &WebsocketServer::processBinaryMessage);
     connect(pSocket->get(), &QWebSocket::disconnected, this, &WebsocketServer::socketDisconnected);
     qDebug() << "New connection with ip" << _server.serverAddress() << endl;
@@ -252,18 +257,18 @@ void WebsocketServer::processMessage(QString message)
     MessageRef msg(reinterpret_cast<uint8_t *>(bmsg.data()), bmsg.size());
     qDebug() << "message in string: " << message << endl;
 
-    try {
-        _parser->parseMessage(msg, timestamp);
-    } catch (std::exception &err) {
-        QMessageBox::warning(
-            nullptr,
-            tr("Websocket Server"),
-            tr("Problem parsing the message. Websocket Server will be stopped.\n%1").arg(err.what()),
-            QMessageBox::Ok);
-        shutdown();
-        emit closed();
-        return;
-    }
+    //    try {
+    //        _parser->parseMessage(msg, timestamp);
+    //    } catch (std::exception &err) {
+    //        QMessageBox::warning(
+    //            nullptr,
+    //            tr("Websocket Server"),
+    //            tr("Problem parsing the message. Websocket Server will be stopped.\n%1").arg(err.what()),
+    //            QMessageBox::Ok);
+    //        shutdown();
+    //        emit closed();
+    //        return;
+    //    }
     emit dataReceived();
     return;
 }
@@ -319,7 +324,7 @@ bool WebsocketServer::initcycl_proc(QByteArray message, WebSocket *pSocket)
         if (*iter == end_Init_byte) {
             pSocket->proc_state = END_INIT;
             pSocket->prev_state = END_INIT;
-            QByteArray message = QString("/").toLocal8Bit(); //send bitch
+            QByteArray message = QString("/").toLatin1(); //send bitch
             pSocket->get()->sendBinaryMessage(message);
             //     return message;
         }
@@ -449,8 +454,9 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
     for (QByteArray::const_iterator iter = message.begin(); iter != message.end(); iter++) {
         switch (pSocket->proc_state) {
         case TIME:
-            qBytes4Convert(message.mid(iter - message.begin(), time_length).data(),
-                           &time); //memcpy time
+            //  qBytes4Convert(message.mid(iter - message.begin(), time_length).data(),
+            //               &time); //memcpy time
+            memcpy(&time, (message.mid(iter - message.begin())).data(), 4);
             iter = next(iter, time_length - 1);
             qDebug() << "Received Time" << time;
             pSocket->proc_state = ID_TRAN;
@@ -472,7 +478,7 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
 
                 if (target_plotIt == serial_numeric_plots.end()) {
                     qDebug() << "name:" << QString::fromStdString(var_name);
-                    dataMap().addNumeric(var_name);
+                    obj_ptr->addPlotNumeric(&dataMap());
                 }
                 target_plotIt = serial_numeric_plots.find(var_name);
                 char *array = message.mid(iter - message.begin(), size).data();
