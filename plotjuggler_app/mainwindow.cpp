@@ -1,9 +1,11 @@
 #include <functional>
-#include <stdio.h>
 #include <numeric>
+#include <stdio.h>
 
-#include <QApplication>
+#include <algorithm>
+#include <iostream>
 #include <QActionGroup>
+#include <QApplication>
 #include <QCheckBox>
 #include <QCommandLineParser>
 #include <QDebug>
@@ -12,24 +14,24 @@
 #include <QDoubleSpinBox>
 #include <QElapsedTimer>
 #include <QFileDialog>
-#include <QInputDialog>
-#include <QMenu>
 #include <QGroupBox>
+#include <QHeaderView>
+#include <QInputDialog>
+#include <QKeySequence>
+#include <QMenu>
 #include <QMessageBox>
 #include <QMimeData>
 #include <QMouseEvent>
 #include <QPluginLoader>
 #include <QPushButton>
-#include <QKeySequence>
 #include <QScrollBar>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QStringListModel>
 #include <QStringRef>
-#include <QThread>
 #include <QTextStream>
+#include <QThread>
 #include <QWindow>
-#include <QHeaderView>
-#include <QStandardPaths>
 #include <QXmlStreamReader>
 
 #include "mainwindow.h"
@@ -389,20 +391,20 @@ void MainWindow::onUpdateLeftTableValues()
 }
 
 void MainWindow::onTrackerMovedFromWidget(QPointF relative_pos)
-{
-  _tracker_time = relative_pos.x() + _time_offset.get();
+{ //debug
+    _tracker_time = relative_pos.x() + _time_offset.get();
 
-  auto prev = ui->timeSlider->blockSignals(true);
-  ui->timeSlider->setRealValue(_tracker_time);
-  ui->timeSlider->blockSignals(prev);
+    auto prev = ui->timeSlider->blockSignals(true);
+    ui->timeSlider->setRealValue(_tracker_time);
+    ui->timeSlider->blockSignals(prev);
 
-  onTrackerTimeUpdated(_tracker_time, true);
+    onTrackerTimeUpdated(_tracker_time, true);
 }
 
 void MainWindow::onTimeSlider_valueChanged(double abs_time)
 {
-  _tracker_time = abs_time;
-  onTrackerTimeUpdated(_tracker_time, true);
+    _tracker_time = abs_time;
+    onTrackerTimeUpdated(_tracker_time, true);
 }
 
 void MainWindow::onTrackerTimeUpdated(double absolute_time, bool do_replot)
@@ -1641,27 +1643,26 @@ std::tuple<double, double, int> MainWindow::calculateVisibleRangeX()
   double min_time = std::numeric_limits<double>::max();
   double max_time = -std::numeric_limits<double>::max();
   int max_steps = 0;
+  //to do: get max time from datamap string series d string
+  //and also min time -> compare to maxtime mintime of plots
 
-  forEachWidget([&](PlotWidget* widget) {
-    for (auto& it : widget->curveList())
-    {
-      const auto& curve_name = it.src_name;
+  forEachWidget([&](PlotWidget *widget) {
+      for (auto &it : widget->curveList()) {
+          const auto &curve_name = it.src_name;
 
-      auto plot_it = _mapped_plot_data.numeric.find(curve_name);
-      if (plot_it == _mapped_plot_data.numeric.end())
-      {
-        continue;  // FIXME?
+          auto plot_it = _mapped_plot_data.numeric.find(curve_name);
+          if (plot_it == _mapped_plot_data.numeric.end()) {
+              continue; // FIXME?
+          }
+          const auto &data = plot_it->second;
+          if (data.size() >= 1) {
+              const double t0 = data.front().x;
+              const double t1 = data.back().x;
+              min_time = std::min(min_time, t0);
+              max_time = std::max(max_time, t1);
+              max_steps = std::max(max_steps, (int) data.size());
+          }
       }
-      const auto& data = plot_it->second;
-      if (data.size() >= 1)
-      {
-        const double t0 = data.front().x;
-        const double t1 = data.back().x;
-        min_time = std::min(min_time, t0);
-        max_time = std::max(max_time, t1);
-        max_steps = std::max(max_steps, (int)data.size());
-      }
-    }
   });
 
   // needed if all the plots are empty
@@ -1838,10 +1839,10 @@ bool MainWindow::loadLayoutFromFile(QString filename)
       }
       _curvelist_widget->refreshColumns();
     }
-  }
-  catch (std::runtime_error& err)
-  {
-    QMessageBox::warning(this, tr("Exception"), tr("Failed to refresh a customMathEquation \n\n %1\n").arg(err.what()));
+  } catch (std::runtime_error &err) {
+      QMessageBox::warning(this,
+                           tr("Exception"),
+                           tr("Failed to refruesh a customMathEquation \n\n %1\n").arg(err.what()));
   }
 
   QByteArray snippets_saved_xml = settings.value("AddCustomPlotDialog.savedXML", QByteArray()).toByteArray();
@@ -1920,7 +1921,7 @@ void MainWindow::forEachWidget(std::function<void(PlotWidget*, PlotDocker*, int)
       for (int index = 0; index < matrix->plotCount(); index++)
       {
         PlotWidget* plot = matrix->plotAt(index);
-        operation(plot, matrix, index);
+        operation(plot, matrix, index); //{plot->updateCurve();{updateCache,..max}}
       }
     }
   };
@@ -1938,12 +1939,21 @@ void MainWindow::forEachWidget(std::function<void(PlotWidget*)> op)
 
 void MainWindow::updateTimeSlider()
 {
-  auto range = calculateVisibleRangeX();
+    auto range = calculateVisibleRangeX();
 
-  ui->timeSlider->setLimits(std::get<0>(range), std::get<1>(range), std::get<2>(range));
+    double stringmaxtime = getstringsMaxTime();
+    double stringmintime = getstringsMinTime();
+    double stringmaxstep = getstringsMaxstep();
+    double max = (std::get<1>(range) < stringmaxtime) ? stringmaxtime : std::get<1>(range);
+    int max_step = (std::get<2>(range) < stringmaxstep) ? stringmaxstep : std::get<2>(range);
+    double min = (std::get<0>(range) < stringmintime) ? stringmintime : std::get<0>(range);
+    ui->timeSlider->setLimits(min, max, max_step);
+    _tracker_time = std::max(_tracker_time,
+                             ui->timeSlider->getMinimum()); //this is the second bitch
 
-  _tracker_time = std::max(_tracker_time, ui->timeSlider->getMinimum());
-  _tracker_time = std::min(_tracker_time, ui->timeSlider->getMaximum());
+    _tracker_time
+        = std::min(_tracker_time,
+                   ui->timeSlider->getMaximum()); //make sure it don't exceed timeSlider get Maximum
 }
 
 void MainWindow::updateTimeOffset()
@@ -1961,7 +1971,83 @@ void MainWindow::updateTimeOffset()
     _time_offset.set(0.0);
   }
 }
+void MainWindow::updatetimesliderStrings()
+{
+    double max_ = 0;
+    double min = -1;
+    //    double maxinsereis = 0;
+    double max_steps = 0;
 
+    for (std::unordered_map<std::string, StringSeries>::const_iterator iter = _mapped_plot_data
+                                                                                  .strings.begin();
+         iter != _mapped_plot_data.strings.end();
+         iter++) {
+        for (int i = 0; i < iter->second.size(); i++) {
+            if (max_ < iter->second.at(i).x) {
+                max_ = iter->second.at(i).x;
+            }
+            if (min == -1 || iter->second.at(i).x < min) {
+                min = iter->second.at(i).x;
+            }
+        }
+        max_steps = (max_steps < iter->second.size()) ? iter->second.size() : max_steps;
+    }
+    ui->timeSlider->setLimits(min, max_, max_steps);
+}
+double MainWindow::trackerGetMaxTime()
+{
+    auto range = calculateVisibleRangeX();
+    double max_time_ = 0;
+    //    if (_mapped_plot_data.numeric.size() != 0)
+    double max_time_str = getstringsMaxTime();
+    max_time_ = (std::get<1>(range) > max_time_str) ? std::get<1>(range) : max_time_str;
+    return max_time_;
+}
+double MainWindow::getstringsMaxTime()
+{
+    double max_ = 0;
+
+    for (std::unordered_map<std::string, StringSeries>::const_iterator iter = _mapped_plot_data
+                                                                                  .strings.begin();
+         iter != _mapped_plot_data.strings.end();
+         iter++) {
+        for (int i = 0; i < iter->second.size(); i++) {
+            if (max_ < iter->second.at(i).x) {
+                max_ = iter->second.at(i).x;
+            }
+        }
+    }
+    return max_;
+}
+double MainWindow::getstringsMinTime()
+{
+    double min = 0;
+
+    for (std::unordered_map<std::string, StringSeries>::const_iterator iter = _mapped_plot_data
+                                                                                  .strings.begin();
+         iter != _mapped_plot_data.strings.end();
+         iter++) {
+        for (int i = 0; i < iter->second.size(); i++) {
+            if (min > iter->second.at(i).x) {
+                min = iter->second.at(i).x;
+            }
+        }
+    }
+    return min;
+};
+int MainWindow::getstringsMaxstep()
+{
+    int max_step = 0;
+
+    for (std::unordered_map<std::string, StringSeries>::const_iterator iter = _mapped_plot_data
+                                                                                  .strings.begin();
+         iter != _mapped_plot_data.strings.end();
+         iter++) {
+        int size = iter->second.size();
+        max_step = (max_step < size) ? size : max_step;
+    }
+    return max_step;
+};
 void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
 {
   _replot_timer->stop();
@@ -1997,48 +2083,43 @@ void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
     auto* dst_plot = &_mapped_plot_data.numeric.at(custom_it.first);
     custom_it.second->calculate(_mapped_plot_data, dst_plot);
   }
+  forEachWidget([](PlotWidget *plot) {
+      plot->updateCurves();
+      plot->updateLabel();
 
-  forEachWidget([](PlotWidget* plot) {
-    plot->updateCurves();
+      // qDebug() << "brah3" << endl;
   });
-
   //--------------------------------
   // trigger again the execution of this callback if steaming == true
-  if (is_streaming_active)
-  {
-    auto range = calculateVisibleRangeX();
-    double max_time = std::get<1>(range);
-    _tracker_time = max_time;
-    onTrackerTimeUpdated(_tracker_time, false);
-    updateTimeSlider();
+  // plot->
+  //show some value information on left table
+  if (is_streaming_active) {
+      ///get max
+      _tracker_time = trackerGetMaxTime(); //this is the bitch
+      onTrackerTimeUpdated(_tracker_time, false);
+      updateTimeSlider();
 
   } else {
       updateTimeOffset();
       updateTimeSlider();
   }
   //--------------------------------
-  if( move_ret.data_pushed )
-  {
-    for (const auto& it : TabbedPlotWidget::instances())
-    {
-      if (replot_hidden_tabs)
-      {
-        QTabWidget* tabs = it.second->tabWidget();
-        for (int index = 0; index < tabs->count(); index++)
-        {
-          PlotDocker* matrix = static_cast<PlotDocker*>(tabs->widget(index));
-          matrix->zoomOut();
-        }
-      } else {
-          PlotDocker *matrix = it.second->currentTab();
-          matrix->zoomAuto(); // includes replot
+  if (move_ret.data_pushed) {
+      for (const auto &it : TabbedPlotWidget::
+               instances()) { //instances contains all the tabs for plot with all plots and is static
+          if (replot_hidden_tabs) {
+              QTabWidget *tabs = it.second->tabWidget();
+              for (int index = 0; index < tabs->count(); index++) {
+                  PlotDocker *matrix = static_cast<PlotDocker *>(tabs->widget(index));
+                  matrix->zoomOut();
+              }
+          } else {
+              PlotDocker *matrix = it.second->currentTab();
+              matrix->zoomAuto(); // includes replot
+          }
       }
-    }
-  }
-  else{
-    forEachWidget([](PlotWidget* plot) {
-      plot->replot();
-    });
+  } else {
+      forEachWidget([](PlotWidget *plot) { plot->replot(); });
   }
 }
 
@@ -2293,37 +2374,34 @@ void MainWindow::onRefreshCustomPlot(const std::string& plot_name)
 
 void MainWindow::onPlaybackLoop()
 {
-  qint64 delta_ms = (QDateTime::currentMSecsSinceEpoch() - _prev_publish_time.toMSecsSinceEpoch());
-  _prev_publish_time = QDateTime::currentDateTime();
-  delta_ms = std::max((qint64)_publish_timer->interval(), delta_ms);
+    qint64 delta_ms = (QDateTime::currentMSecsSinceEpoch() - _prev_publish_time.toMSecsSinceEpoch());
+    _prev_publish_time = QDateTime::currentDateTime();
+    delta_ms = std::max((qint64) _publish_timer->interval(), delta_ms);
 
-  _tracker_time += delta_ms * 0.001 * ui->playbackRate->value();
-  if (_tracker_time >= ui->timeSlider->getMaximum())
-  {
-    if (!ui->playbackLoop->isChecked())
-    {
-      ui->pushButtonPlay->setChecked(false);
+    _tracker_time += delta_ms * 0.001 * ui->playbackRate->value();
+    if (_tracker_time >= ui->timeSlider->getMaximum()) {
+        if (!ui->playbackLoop->isChecked()) {
+            ui->pushButtonPlay->setChecked(false);
+        }
+        _tracker_time = ui->timeSlider->getMinimum();
     }
-    _tracker_time = ui->timeSlider->getMinimum();
-  }
-  //////////////////
-  auto prev = ui->timeSlider->blockSignals(true);
-  ui->timeSlider->setRealValue(_tracker_time);
-  ui->timeSlider->blockSignals(prev);
+    //////////////////
+    auto prev = ui->timeSlider->blockSignals(true);
+    ui->timeSlider->setRealValue(_tracker_time);
+    ui->timeSlider->blockSignals(prev);
 
-  //////////////////
-  updatedDisplayTime();
-  onUpdateLeftTableValues();
+    //////////////////
+    updatedDisplayTime();
+    onUpdateLeftTableValues();
 
-  for (auto& it : _state_publisher)
-  {
-    it.second->play(_tracker_time);
-  }
+    for (auto &it : _state_publisher) {
+        it.second->play(_tracker_time);
+    }
 
-  forEachWidget([&](PlotWidget* plot) {
-    plot->setTrackerPosition(_tracker_time);
-    plot->replot();
-  });
+    forEachWidget([&](PlotWidget *plot) {
+        plot->setTrackerPosition(_tracker_time);
+        plot->replot();
+    });
 }
 
 void MainWindow::onCustomPlotCreated(CustomPlotPtr custom_plot)

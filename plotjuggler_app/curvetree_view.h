@@ -8,13 +8,13 @@
 class CurveTreeView : public QTreeWidget, public CurvesView
 {
 public:
-  CurveTreeView(CurveListPanel* parent);
+    CurveTreeView(CurveListPanel *parent, PJ::PlotDataMapRef &dataplot);
 
-  void clear() override
-  {
-    QTreeWidget::clear();
-    _leaf_count = 0;
-    _hidden_count = 0;
+    void clear() override
+    {
+        QTreeWidget::clear();
+        _leaf_count = 0;
+        _hidden_count = 0;
   }
 
   void addItem(const QString& prefix, const QString& tree_name, const QString &plot_ID) override;

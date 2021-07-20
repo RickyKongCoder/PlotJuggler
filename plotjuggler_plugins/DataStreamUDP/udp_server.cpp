@@ -176,7 +176,10 @@ void UDP_Server::processMessage()
 
     using namespace std::chrono;
     auto ts = high_resolution_clock::now().time_since_epoch();
-    double timestamp = 1e-6* double( duration_cast<microseconds>(ts).count() );
+    double timestamp = 1e-6 * double(duration_cast<microseconds>(ts).count());
+    if (dataMap().strings.find("FUCK") == dataMap().strings.end())
+        dataMap().addStringSeries("FUCK");
+    dataMap().strings.find("FUCK")->second.pushBack({timestamp, "shit"});
 
     QByteArray m = datagram.data();
     MessageRef msg(reinterpret_cast<uint8_t *>(m.data()), m.count());

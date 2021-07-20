@@ -65,6 +65,7 @@ class MainWindow : public QMainWindow
   void onTrackerTimeUpdated(double absolute_time, bool do_replot);
   void onTrackerMovedFromWidget(QPointF pos);
   void onTimeSlider_valueChanged(double abs_time);
+  void updatetimesliderStrings();
 
   void onPlotAdded(PlotWidget* plot);
 
@@ -178,6 +179,7 @@ private:
   void closeEvent(QCloseEvent* event);
 
   void loadPluginState(const QDomElement& root);
+  double trackerGetMaxTime();
   QDomElement savePluginState(QDomDocument& doc);
 
   std::tuple<double, double, int> calculateVisibleRangeX();
@@ -190,6 +192,9 @@ private:
   void updatedDisplayTime();
 
   void updateTimeSlider();
+  double getstringsMaxTime();
+  double getstringsMinTime();
+  int getstringsMaxstep();
   void updateTimeOffset();
 
   void buildDummyData();

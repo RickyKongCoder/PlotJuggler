@@ -18,7 +18,8 @@ public:
   }
 };
 
-CurveTreeView::CurveTreeView(CurveListPanel* parent) : QTreeWidget(parent), CurvesView(parent)
+CurveTreeView::CurveTreeView(CurveListPanel *parent, PJ::PlotDataMapRef &dataplot)
+    : QTreeWidget(parent), CurvesView(parent, dataplot)
 {
   setColumnCount(2);
   setEditTriggers(NoEditTriggers);
@@ -67,7 +68,7 @@ void CurveTreeView::addItem(const QString &group_name, const QString& tree_name,
   QStringList parts;
   if( use_separator )
   {
-    parts = tree_name.split('/', QString::SplitBehavior::SkipEmptyParts);
+      parts = tree_name.split('/', QString::SplitBehavior::SkipEmptyParts); //FUCK YOU
   }
   else{
     parts.push_back(tree_name);

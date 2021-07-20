@@ -36,7 +36,7 @@ PlotDocker::PlotDocker(QString name, PlotDataMapRef& datamap, QWidget *parent):
       auto area = addDockWidget(ads::TopDockWidgetArea, widget);
       area->setAllowedAreas(ads::OuterDockAreas);
 
-      this->plotWidgetAdded( widget->plotWidget() );
+      this->plotWidgetAdded(widget->plotWidget()); //i find where they put plot widget
 
       connect(widget, &DockWidget::undoableChange, this, &PlotDocker::undoableChange);
     }
