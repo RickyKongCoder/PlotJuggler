@@ -246,8 +246,10 @@ private slots:
   void on_showPoints_triggered();
 
   void on_externallyResized(const QRectF& new_rect);
+  void remove_Labels(QAction *q);
+  void removeLabelsets(std::string name);
 
-private:
+  private:
   std::list<CurveInfo> _curve_list;
 
   QAction* _action_removeAllCurves;
@@ -266,7 +268,7 @@ private:
   QAction* _action_paste;
   QAction *_action_image_to_clipboard;
   QMenu *_action_remove_label;
-  void remove_Labels();
+  std::unordered_map<std::string, QAction *> labelremove_act;
 
   PlotZoomer *_zoomer;
   PlotMagnifier* _magnifier;

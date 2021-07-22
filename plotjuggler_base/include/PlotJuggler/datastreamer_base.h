@@ -81,7 +81,7 @@ private:
   std::mutex _mutex;
   PlotDataMapRef _data_map;
   QAction* _start_streamer;
-  MessageParserFactory* _available_parsers;
+  MessageParserFactory *_available_parsers;
 };
 
 inline void DataStreamer::setMaximumRangeX(double range)

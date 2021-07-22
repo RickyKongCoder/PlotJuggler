@@ -548,14 +548,15 @@ void WebsocketServer::processBinaryMessage(QByteArray message, WebSocket *qsocke
     QByteArray pass;
 
     switch (qsocket->pstate) {
-    case INIT:{
-        pass = waitready_proc(message, qsocket);
-        pass = waitinit_cyclproc(pass, qsocket);
+    case INIT: {
+        //  pass = waitready_proc(message, qsocket);
+        pass = waitinit_cyclproc(message, qsocket);
         qsocket->pstate = (initcycl_proc(pass, qsocket)) ? TRANSFER : INIT;
         //qDebug() << pass << "message for now" << endl;
         QString str = QString(ready_byte);
         qsocket->get()->sendTextMessage(str);
-        break;}
+        break;
+    }
     case TRANSFER: //for now only consider big endian
         procc_data(message, qsocket);
         break;

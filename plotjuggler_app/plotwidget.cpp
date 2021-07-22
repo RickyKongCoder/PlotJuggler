@@ -331,20 +331,22 @@ void PlotWidget::buildActions()
           &PlotWidget::on_zoomScaleDownHorizontal_triggered);
   _action_remove_label = new QMenu("&Remove Labels", this);
 
-  connect(_action_remove_label, &QMenu::triggered, this, &PlotWidget::remove_Labels);
+  qDebug() << "action move label connected" << endl;
 }
-void PlotWidget::remove_Labels()
+void PlotWidget::remove_Labels(QAction *q)
 {
-    QAction q[label.size()];
-    int i = 0;
-    for (std::map<std::string, LabelSets *>::const_iterator iter = label.begin();
-         iter != label.end();
-         iter++, i++) {
-        q->setText(QString::fromStdString(iter->first));
-        _action_remove_label->addAction(&q[i]);
-        // connect(q[i],&QAction::triggered(),&PlotWidget::);
-    }
+    if (q == nullptr)
+        qDebug() << "NUllptr";
+    else
+        qDebug() << "qACtion text" << q->text() << endl;
+    qDebug() << "hahh" << endl;
+    removeLabelsets(q->text().toStdString());
+    label.erase(q->text().toStdString());
+    if (widget_colorindex > 0)
+        widget_colorindex -= 1;
+    this->replot();
 }
+
 void PlotWidget::canvasContextMenuTriggered(const QPoint &pos)
 {
   if( _context_menu_enabled == false )
@@ -389,7 +391,23 @@ void PlotWidget::canvasContextMenuTriggered(const QPoint &pos)
   menu.addAction(_action_image_to_clipboard);
   menu.addAction(_action_saveToFile);
   menu.addMenu(_action_remove_label);
+  qDebug() << "runnning this" << endl;
+  int i = 0;
+  _action_remove_label->clear();
+  labelremove_act.clear();
+  connect(_action_remove_label, SIGNAL(triggered(QAction *)), this, SLOT(remove_Labels(QAction *)));
 
+  for (std::map<std::string, LabelSets *>::const_iterator iter = label.begin(); iter != label.end();
+       iter++, i++) {
+      if (labelremove_act.find(iter->first) == labelremove_act.end()) {
+          QAction *q = new QAction("", _action_remove_label);
+          labelremove_act.insert({iter->first, q});
+          q->setText(QString::fromStdString(iter->first));
+          _action_remove_label->addAction(q);
+          QString ref = QString::fromStdString(iter->first);
+      }
+      qDebug() << "for loop label sets in remove labels" << endl;
+  }
   // check the clipboard
   QClipboard *clipboard = QGuiApplication::clipboard();
   QString clipboard_text = clipboard->text();
@@ -471,8 +489,22 @@ PlotWidget::CurveInfo* PlotWidget::addCurve(const std::string& name, QColor colo
 
   return &(_curve_list.back());
 }
+void PlotWidget::removeLabelsets(std::string name)
+{
+    if (label.find(name) != label.end()) {
+        std::list<QwtPlotMarker *> &mks = label[name]->markers;
 
-PlotWidget::CurveInfo *PlotWidget::addCurveXY(std::string name_x, std::string name_y, QString curve_name)
+        for (std::list<QwtPlotMarker *>::const_iterator iter = mks.begin(); iter != mks.end();
+             iter++) {
+            (*iter)->detach();
+            delete *iter;
+        }
+    }
+}
+
+PlotWidget::CurveInfo *PlotWidget::addCurveXY(std::string name_x,
+                                              std::string name_y,
+                                              QString curve_name)
 {
   std::string name = curve_name.toStdString();
 
