@@ -517,12 +517,6 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
                                          .data()); //for enum it is a byte with enum id so...
             obj_ptr->updatePlot(dataMap(), time);
 
-            //test shits
-            //            if (dataMap().strings.find("FUCK") == dataMap().strings.end()) {
-            //                dataMap().addStringSeries("FUCK");
-            //            }
-            //            shit += "shit";
-            //            dataMap().strings.find("FUCK")->second.pushBack({time, shit});
             debug("size" << dataMap().strings.size());
             pSocket->proc_state = ID_TRAN;
             iter = next(iter, size - 1);

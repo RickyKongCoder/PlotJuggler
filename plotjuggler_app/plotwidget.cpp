@@ -26,6 +26,7 @@
 #include <QActionGroup>
 #include <QApplication>
 #include <QClipboard>
+#include <QColor>
 #include <QDebug>
 #include <QDrag>
 #include <QDragEnterEvent>
@@ -43,7 +44,7 @@
 #include <QtXml/QDomElement>
 
 int PlotWidget::global_color_index = 0;
-
+QColor mcolor[] = {Qt::blue, Qt::red, Qt::yellow, Qt::cyan};
 
 QColor PlotWidget::getColorHint(PlotData* data)
 {
@@ -328,9 +329,23 @@ void PlotWidget::buildActions()
           &QAction::triggered,
           this,
           &PlotWidget::on_zoomScaleDownHorizontal_triggered);
-}
+  _action_remove_label = new QMenu("&Remove Labels", this);
 
-void PlotWidget::canvasContextMenuTriggered(const QPoint& pos)
+  connect(_action_remove_label, &QMenu::triggered, this, &PlotWidget::remove_Labels);
+}
+void PlotWidget::remove_Labels()
+{
+    QAction q[label.size()];
+    int i = 0;
+    for (std::map<std::string, LabelSets *>::const_iterator iter = label.begin();
+         iter != label.end();
+         iter++, i++) {
+        q->setText(QString::fromStdString(iter->first));
+        _action_remove_label->addAction(&q[i]);
+        // connect(q[i],&QAction::triggered(),&PlotWidget::);
+    }
+}
+void PlotWidget::canvasContextMenuTriggered(const QPoint &pos)
 {
   if( _context_menu_enabled == false )
   {
@@ -373,6 +388,7 @@ void PlotWidget::canvasContextMenuTriggered(const QPoint& pos)
   menu.addAction(_action_paste);
   menu.addAction(_action_image_to_clipboard);
   menu.addAction(_action_saveToFile);
+  menu.addAction(_action_remove_label);
 
   // check the clipboard
   QClipboard *clipboard = QGuiApplication::clipboard();
@@ -531,9 +547,7 @@ PlotWidget::CurveInfo *PlotWidget::addCurveXY(std::string name_x, std::string na
 
   curve->setPen(color, (_curve_style == QwtPlotCurve::Dots) ? 4.0 : 1.3);
   curve->setStyle(_curve_style);
-
   curve->setRenderHint(QwtPlotItem::RenderAntialiased, true);
-
   curve->attach(this);
 
   auto marker = new QwtPlotMarker;
@@ -724,9 +738,10 @@ void PlotWidget::dropEvent(QDropEvent *)
 
         for (const auto &curve_name : _dragging.curves) {
             bool added = addCurve(curve_name.toStdString()) != nullptr;
-            updateLabel();
             curves_changed = curves_changed || added;
         }
+        updateLabel();
+
     } else if (_dragging.mode == DragInfo::NEW_XY && _dragging.curves.size() == 2) {
         if (!_curve_list.empty() && !_xy_mode) {
             _dragging.mode = DragInfo::NONE;
@@ -742,20 +757,22 @@ void PlotWidget::dropEvent(QDropEvent *)
         addCurveXY(_dragging.curves[0].toStdString(), _dragging.curves[1].toStdString());
 
         curves_changed = true;
-    } else if (_dragging.mode == DragInfo::STRINGS) {
+    }
+
+    if (_dragging.mode == DragInfo::STRINGS) {
         for (const auto &curve_name : _dragging.curves) {
             addLabel(curve_name.toStdString());
-            updateLabel();
             curves_changed = true;
             qDebug() << "i am adding some label bithc" << endl;
         }
     }
-
     if (curves_changed) {
         emit curvesDropped();
         emit curveListChanged();
         zoomOut(true);
+        updateLabel(); //important always put this after zooming
     }
+
     _dragging.mode = DragInfo::NONE;
     _dragging.curves.clear();
 }
@@ -777,6 +794,25 @@ void PlotWidget::removeAllCurves()
   replot();
 }
 
+void PlotWidget::addQwtPlotMarker(LabelSets *ls, std::string labeltext, double x, double y)
+{
+    QwtPlotMarker *qpm = new QwtPlotMarker;
+    QwtText qwttext{QString::fromStdString(labeltext)};
+    qwttext.setFont(QFont("Times", 20, QFont::Bold));
+    qpm->setLabel(qwttext);
+    qpm->setValue(x,
+                  y); //i->x is the time bro haha
+    qpm->setVisible(true);
+    qpm->setLinePen(Qt::blue, 1.0);
+    QwtSymbol *sym = new QwtSymbol(QwtSymbol::Ellipse,
+                                   mcolor[ls->colorindex],
+                                   QPen(Qt::black),
+                                   QSize(16, 16));
+    qpm->setSymbol(sym);
+    qpm->attach(this);
+
+    ls->markers.push_back(qpm);
+}
 void PlotWidget::addLabel(const std::string &label_name)
 {
     //    qpm->setValue(_mapped_data.strings.find(label_name)->second,);
@@ -786,26 +822,15 @@ void PlotWidget::addLabel(const std::string &label_name)
     if (label.find(label_name) == label.end()) {       //remember remove
         LabelSets *ls = new LabelSets;
         ls->name = label_name;
+        ls->colorindex = widget_colorindex++;
         label.insert(std::pair<std::string, LabelSets *>({label_name, ls}));
         qDebug() << "FUCK" << endl;
+        int colorindex = 0;
         for (StringSeries::ConstIterator i = iter->second.begin(); i != iter->second.end(); i++) {
-            QwtPlotMarker *qpm = new QwtPlotMarker;
-            QwtText qwttext{i->y.data()};
-            qwttext.setFont(QFont("Times", 20, QFont::Bold));
-            qpm->setLabel(qwttext);
-            qpm->setValue(i->x,
-                          ((this->canvasMap(yLeft).s1() + this->canvasMap(yLeft).s2())
-                           / 2)); //i->x is the time bro haha
-            qpm->setVisible(true);
-            qpm->setLinePen(Qt::blue, 1.0);
-            QwtSymbol *sym = new QwtSymbol(QwtSymbol::Ellipse,
-                                           Qt::red,
-                                           QPen(Qt::black),
-                                           QSize(16, 16));
-            qpm->setSymbol(sym);
-            qpm->attach(this);
-            ls->markers.push_back(qpm);
-            qDebug() << "Label Size:" << label[label_name]->markers.size() << endl;
+            addQwtPlotMarker(ls,
+                             i->y.data(),
+                             i->x,
+                             (this->canvasMap(yLeft).s1() + this->canvasMap(yLeft).s2()) / 2);
         }
     }
 
@@ -1321,8 +1346,8 @@ Range PlotWidget::getMaximumRangeXNumeric() const
     }
     right = right + margin;
     left = left - margin;
-    qDebug() << "left" << left << endl;
-    qDebug() << "right" << right << endl;
+    // qDebug() << "left" << left << endl;
+    //  qDebug() << "right" << right << endl;
     return Range({left, right});
 }
 Range PlotWidget::getMaximumRangeX() const
@@ -1338,8 +1363,8 @@ Range PlotWidget::getMaximumRangeX() const
         //lb.second->getMaxX(); // right = std::max(right, lb.second->getMaxX());
         right = std::max(right, lb.second->getMaxX());
         left = std::min(left, lb.second->getMinX());
-        qDebug() << "lb.second->getMaxX()" << lb.second->getMaxX() << endl;
-        qDebug() << "lb.second->getMinX()" << lb.second->getMinX() << endl;
+        //   qDebug() << "lb.second->getMaxX()" << lb.second->getMaxX() << endl;
+        // qDebug() << "lb.second->getMinX()" << lb.second->getMinX() << endl;
     }
     //take all visible curve and find maxrangex
 
@@ -1454,33 +1479,26 @@ void PlotWidget::updateCurves()
 void PlotWidget::updateLabel()
 {
     QRectF max_rect;
+    updateLabelSets();
+    updateMaximumZoomArea();
     qDebug() << "updateLabel" << endl;
     auto rangeY = getMaximumRangeY(getMaximumRangeXNumeric());
     for (auto &lb : label) {
         for (auto &mk : lb.second->markers) {
             mk->setYValue((this->canvasMap(yLeft).s1() + this->canvasMap(yLeft).s2()) / 2);
-            qDebug() << "this->canvasMap(yLeft).s1())" << this->canvasMap(yLeft).s1() << endl;
-            qDebug() << "this->canvasMap(yLeft).s2()" << this->canvasMap(yLeft).s2() << endl;
+            //  qDebug() << "this->canvasMap(yLeft).s1())" << this->canvasMap(yLeft).s1() << endl;
+            // qDebug() << "this->canvasMap(yLeft).s2()" << this->canvasMap(yLeft).s2() << endl;
         }
     }
-    updateLabelSets();
-    updateMaximumZoomArea();
 }
 void PlotWidget::addLabelMarker(LabelSets &ls, const char *enum_el, double x)
 {
-    QwtPlotMarker *qpm = new QwtPlotMarker;
-    QwtText qwttext{enum_el};
-    qwttext.setFont(QFont("Times", 20, QFont::Bold));
-    qpm->setLabel(qwttext);
-    qpm->setXValue(x);
-    qpm->setLinePen(Qt::blue, 1.0);
-
-    qpm->setYValue((this->canvasMap(yLeft).s1() + this->canvasMap(yLeft).s2()) / 2);
-    qpm->setVisible(true);
-    qpm->attach(this);
-    QwtSymbol *sym = new QwtSymbol(QwtSymbol::Ellipse, Qt::red, QPen(Qt::black), QSize(16, 16));
-    qpm->setSymbol(sym);
-    ls.markers.push_back(qpm);
+    addQwtPlotMarker(&ls,
+                     enum_el,
+                     x,
+                     (this->canvasMap(yLeft).s1() + this->canvasMap(yLeft).s2()) / 2);
+    //    qpm->setSymbol(sym);
+    // ls.markers.push_back(qpm);
 }
 void PlotWidget::updateLabelSets()
 {

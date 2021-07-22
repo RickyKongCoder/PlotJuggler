@@ -22,6 +22,7 @@
 #include <map>
 #include <string.h>
 #include <QDomDocument>
+#include <QMenu>
 #include <QMessageBox>
 #include <QObject>
 #include <QTextEdit>
@@ -32,7 +33,8 @@ typedef struct
 {
     std::string name;
     std::list<QwtPlotMarker *> markers;
-    QColor color;
+    //QColor color;
+    int colorindex = 0;
 
     bool markersContain(double time)
     {
@@ -84,11 +86,10 @@ public:
   virtual ~PlotWidget() override;
 
   bool isEmpty() const;
-
   const std::list<CurveInfo> &curveList() const;
 
   std::list<CurveInfo> &curveList();
-
+  int widget_colorindex = 0;
   CurveInfo* curveFromTitle(const QString &title);
 
   const CurveInfo* curveFromTitle(const QString &title) const;
@@ -264,11 +265,14 @@ private:
   QAction* _action_copy;
   QAction* _action_paste;
   QAction *_action_image_to_clipboard;
+  QMenu *_action_remove_label;
+  void remove_Labels();
 
   PlotZoomer *_zoomer;
   PlotMagnifier* _magnifier;
   QwtPlotPanner* _panner1;
-  QwtPlotPanner* _panner2;
+  QwtPlotPanner *_panner2;
+  void addQwtPlotMarker(LabelSets *ls, std::string labeltext, double x, double y);
 
   CurveTracker* _tracker;
   PlotLegend* _legend;
