@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QString>
 
+#include <QDebug>
 RangeOpt QwtTimeseries::getVisualizationRangeY(Range range_X)
 {
   int first_index = _ts_data->getIndexFromX(range_X.min);
@@ -77,24 +78,28 @@ void TransformedTimeseries::setTransform(QString transform_ID)
 
 bool TransformedTimeseries::updateCache(bool reset_old_data)
 {
-  if( _transform )
-  {
-    if( reset_old_data )
-    {
-      _dst_data.clear();
-      _transform->init();
+    if (_transform) {
+        if (reset_old_data) {
+            _dst_data.clear();
+            _transform->init();
+        }
+        _transform->calculate(&_dst_data);
+        // qDebug() << "brah1" << endl;
+
+    } else {
+        // TODO: optimize ??
+        _dst_data.clear();
+        //  qDebug() << "brah2" << endl;
+
+        for (size_t i = 0; i < _source_data->size(); i++) {
+            //just for fun
+            _dst_data.pushBack(_source_data->at(i));
+            //  qDebug() << "brah2" << endl;
+            //  qDebug() << "the X" << _source_data->at(i).x << endl;
+            //   qDebug() << "the Y" << _source_data->at(i).y << endl;
+        }
     }
-    _transform->calculate( &_dst_data );
-  }
-  else{
-    // TODO: optimize ??
-    _dst_data.clear();
-    for(size_t i=0; i < _source_data->size(); i++)
-    {
-      _dst_data.pushBack( _source_data->at(i) );
-    }
-  }
-  return true;
+    return true;
 }
 
 QString TransformedTimeseries::transformName()

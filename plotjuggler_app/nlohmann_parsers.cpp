@@ -53,7 +53,10 @@ bool NlohmannParser::parseMessageImpl(double &timestamp)
             //       qDebug() << "prefix to plot" << QString::fromStdString(prefix);
 
             auto plot_data = &(getSeries(prefix));
+            // auto plot_data2 = &(getStringSeries(prefix + "k"));
             plot_data->pushBack({timestamp, numeric_value});
+            //            plot_data2->pushBack({timestamp, "Sex"});
+            //   plot_data2->pushBack({timestamp + 1.0, "dddd"});
 
             break;
         }

@@ -84,8 +84,7 @@ protected:
 
 private:
   Ui::CurveListPanel* ui;
-
-  PlotDataMapRef& _plot_data;
+  PlotDataMapRef &_plot_data;
 
   void updateTreeModel();
 

@@ -1,10 +1,12 @@
 #ifndef PJ_PLOTDATA_H
 #define PJ_PLOTDATA_H
 
+#include "QDebug"
 #include "plotdatabase.h"
-#include "timeseries.h"
+#include "string.h"
+#include "string_ref_sso.h"
 #include "stringseries.h"
-
+#include "timeseries.h"
 namespace PJ {
 
 using PlotDataXY = PlotDataBase<double, double>;
@@ -13,34 +15,34 @@ using PlotDataAny = TimeseriesBase<std::any>;
 
 struct PlotDataMapRef
 {
-  std::unordered_map<std::string, PlotData> numeric;
-  std::unordered_map<std::string, PlotDataAny> user_defined;
-  std::unordered_map<std::string, StringSeries> strings;
-  std::unordered_map<std::string, PlotGroup::Ptr> groups;
+    std::unordered_map<std::string, PlotData> numeric; //it is public bitch
+    std::unordered_map<std::string, PlotDataAny> user_defined;
+    std::unordered_map<std::string, StringSeries> strings;
+    std::unordered_map<std::string, PlotGroup::Ptr> groups;
 
-  template <typename T>
-  typename std::unordered_map<std::string, T>::iterator addImpl(
-      std::unordered_map<std::string, T>& series, const std::string& name, PlotGroup::Ptr group )
-  {
-    std::string ID;
-    if( group )
+    template<typename T>
+    typename std::unordered_map<std::string, T>::iterator addImpl(
+        std::unordered_map<std::string, T> &series, const std::string &name, PlotGroup::Ptr group)
     {
-      ID = group->name();
-      if (ID.back() != '/')
-      {
-        ID.push_back('/');
-      }
-    }
-    ID += name;
+        std::string ID;
+        if (group) {
+            ID = group->name();
+            if (ID.back() != '/') {
+                ID.push_back('/');
+            }
+        }
+        ID += name;
 
-    return series.emplace(
-          std::piecewise_construct,
-          std::forward_as_tuple(name),
-          std::forward_as_tuple(name, group)).first;
+        return series
+            .emplace(std::piecewise_construct,
+                     std::forward_as_tuple(name),
+                     std::forward_as_tuple(name, group))
+            .first;
   }
-
-  template <typename T>
-  T& getOrCreateImpl(std::unordered_map<std::string, T>& series, const std::string& name, const PlotGroup::Ptr& group)
+  template<typename T>
+  T &getOrCreateImpl(std::unordered_map<std::string, T> &series,
+                     const std::string &name,
+                     const PlotGroup::Ptr &group)
   {
     auto it = series.find( name );
     if( it == series.end() ) {
@@ -140,6 +142,45 @@ struct PlotDataMapRef
     return erased;
   }
 
+  //  double stringsMaxTime()
+  //  {
+  //      double max = 0;
+  //      double maxinseries = 0;
+  //      for (std::unordered_map<std::string, StringSeries>::const_iterator iter = strings.begin();
+  //           iter != strings.end();
+  //           iter++) {
+  //          maxinseries = max_element(std::begin(iter->second),
+  //                                    std::end(iter->second),
+  //                                    [](PlotDataBase<double, StringRef>::Point &p1,
+  //                                       PlotDataBase<double, StringRef>::Point &p2) {
+  //                                        return (p1.x < p2.x);
+  //                                    })
+  //                            ->x;
+  //          max = (max > maxinseries) ? maxinseries : max;
+  //      }
+  //      qDebug() << "max time of strings" << max;
+  //      return max;
+  //  }
+  //  double stringsMinTime()
+  //  {
+  //      double min = 0;
+  //      double mininseries = 0;
+  //      for (std::unordered_map<std::string, StringSeries>::const_iterator iter = strings.begin();
+  //           iter != strings.end();
+  //           iter++) {
+  //          mininseries = max_element(std::begin(iter->second),
+  //                                    std::end(iter->second),
+  //                                    [](PlotDataBase<double, StringRef>::Point &p1,
+  //                                       PlotDataBase<double, StringRef>::Point &p2) {
+  //                                        return (p1.x > p2.x);
+  //                                    })
+  //                            ->x;
+  //          min = (min > mininseries) ? mininseries : min;
+  //      }
+  //      qDebug() << "min time of strings" << min;
+
+  //      return min;
+  //  }
 };
 
 template <typename Value>
@@ -179,6 +220,6 @@ inline void AddPrefixToPlotData(const std::string& prefix,
   }
 }
 
-}
+} // namespace PJ
 
 #endif // PJ_PLOTDATA_H

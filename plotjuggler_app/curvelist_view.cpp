@@ -7,7 +7,8 @@
 #include <QScrollBar>
 #include "curvelist_panel.h"
 
-CurveTableView::CurveTableView(CurveListPanel* parent) : QTableWidget(parent), CurvesView(parent)
+CurveTableView::CurveTableView(CurveListPanel *parent, PJ::PlotDataMapRef &dataplot)
+    : QTableWidget(parent), CurvesView(parent, dataplot), dataplot(dataplot)
 {
   setColumnCount(2);
   setEditTriggers(NoEditTriggers);
@@ -194,7 +195,8 @@ void CurveTableView::hideValuesColumn(bool hide)
   }
 }
 
-CurvesView::CurvesView(CurveListPanel *parent) : _parent_panel(parent)
+CurvesView::CurvesView(CurveListPanel *parent, PJ::PlotDataMapRef &dataplot)
+    : _parent_panel(parent), dataplot(dataplot)
 {
 }
 
@@ -255,47 +257,51 @@ bool CurvesView::eventFilterBase(QObject* object, QEvent* event)
       auto selected_names = _parent_panel->getSelectedNames();
 
       std::sort(selected_names.begin(), selected_names.end());
-
-      for (const auto& curve_name : selected_names)
-      {
-        stream << QString::fromStdString(curve_name);
+      bool allnumeric = true;
+      for (const auto &curve_name : selected_names) {
+          if (dataplot.strings.find(curve_name) != dataplot.strings.end())
+              allnumeric = false;
+          stream << QString::fromStdString(curve_name);
       }
 
-      if (!_newX_modifier)
-      {
-        mimeData->setData("curveslist/add_curve", mdata);
-      }
-      else
-      {
-        if (selected_names.size() != 2)
-        {
-          if (selected_names.size() >= 1)
-          {
-            QMessageBox::warning(table_widget, "New in version 2.3+",
-                                 "To create a new XY curve, you must select two "
-                                 "timeseries and "
-                                 "drag&drop them using the RIGHT mouse button.",
-                                 QMessageBox::Ok);
+      if (!_newX_modifier) {
+          if (allnumeric)
+              mimeData->setData("curveslist/add_curve", mdata);
+          else {
+              mimeData->setData("curveslist/add_string", mdata);
+              qDebug() << "i runed this" << endl;
           }
-          return true;
-        }
-        mimeData->setData("curveslist/new_XY_axis", mdata);
 
-        QPixmap cursor(QSize(80, 30));
-        cursor.fill(Qt::transparent);
+      } else {
+          if (selected_names.size() != 2) {
+              if (selected_names.size() >= 1) {
+                  QMessageBox::warning(table_widget,
+                                       "New in version 2.3+",
+                                       "To create a new XY curve, you must select two "
+                                       "timeseries and "
+                                       "drag&drop them using the RIGHT mouse button.",
+                                       QMessageBox::Ok);
+              }
+              return true;
+          }
 
-        QPainter painter;
-        painter.begin(&cursor);
+          mimeData->setData("curveslist/new_XY_axis", mdata);
 
-        QString text("XY");
-        painter.setFont(QFont("Arial", 14));
+          QPixmap cursor(QSize(80, 30));
+          cursor.fill(Qt::transparent);
 
-        painter.setBackground(Qt::transparent);
-        painter.setPen(table_widget->palette().foreground().color());
-        painter.drawText(QRect(0, 0, 80, 30), Qt::AlignCenter, text);
-        painter.end();
+          QPainter painter;
+          painter.begin(&cursor);
 
-        drag->setDragCursor(cursor, Qt::MoveAction);
+          QString text("XY");
+          painter.setFont(QFont("Arial", 14));
+
+          painter.setBackground(Qt::transparent);
+          painter.setPen(table_widget->palette().foreground().color());
+          painter.drawText(QRect(0, 0, 80, 30), Qt::AlignCenter, text);
+          painter.end();
+
+          drag->setDragCursor(cursor, Qt::MoveAction);
       }
 
       drag->setMimeData(mimeData);

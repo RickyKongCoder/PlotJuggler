@@ -1,18 +1,19 @@
 #ifndef CURVELIST_VIEW_H
 #define CURVELIST_VIEW_H
 
+#include <PlotJuggler/plotdata.h>
+#include <vector>
 #include <QFont>
 #include <QFontDatabase>
 #include <QGuiApplication>
 #include <QHeaderView>
 #include <QMouseEvent>
 #include <QPainter>
+#include <QSet>
 #include <QSettings>
 #include <QStandardItem>
 #include <QStandardItemModel>
 #include <QTableWidget>
-#include <vector>
-#include <QSet>
 
 #include "PlotJuggler/alphanum.hpp"
 
@@ -44,36 +45,35 @@ enum CustomRoles{
 class CurvesView
 {
 public:
+    CurvesView(CurveListPanel *parent, PJ::PlotDataMapRef &dataplot);
 
-  CurvesView(CurveListPanel* parent);
+    virtual void clear() = 0;
 
-  virtual void clear() = 0;
+    virtual void addItem(const QString &prefix, const QString &tree_name, const QString &plot_ID) = 0;
 
-  virtual void addItem(const QString& prefix, const QString& tree_name, const QString &plot_ID) = 0;
+    virtual std::vector<std::string> getSelectedNames() = 0;
 
-  virtual std::vector<std::string> getSelectedNames() = 0;
+    virtual bool applyVisibilityFilter(const QString &filter_string) = 0;
 
-  virtual bool applyVisibilityFilter(const QString& filter_string) = 0;
+    virtual void refreshFontSize() = 0;
 
-  virtual void refreshFontSize() = 0;
+    virtual void refreshColumns() = 0;
 
-  virtual void refreshColumns() = 0;
+    virtual void hideValuesColumn(bool hide) = 0;
 
-  virtual void hideValuesColumn(bool hide) = 0;
+    virtual void setViewResizeEnabled(bool enable) = 0;
 
-  virtual void setViewResizeEnabled(bool enable) = 0;
+    bool eventFilterBase(QObject *object, QEvent *event);
 
-  bool eventFilterBase(QObject* object, QEvent* event);
+    virtual std::pair<int, int> hiddenItemsCount() = 0;
 
-  virtual std::pair<int, int> hiddenItemsCount() = 0;
+    virtual void removeCurve(const QString &name) = 0;
 
-  virtual void removeCurve(const QString& name) = 0;
-
-  void setFontSize(int size)
-  {
-    _point_size = size;
-    refreshFontSize();
-  }
+    void setFontSize(int size)
+    {
+        _point_size = size;
+        refreshFontSize();
+    }
 
 protected:
   int _point_size = 9;
@@ -81,18 +81,19 @@ protected:
   bool _newX_modifier = false;
   bool _dragging = false;
   CurveListPanel* _parent_panel;
+  PJ::PlotDataMapRef &dataplot;
 };
 
 class CurveTableView : public QTableWidget, public CurvesView
 {
 public:
-  CurveTableView(CurveListPanel* parent);
+    CurveTableView(CurveListPanel *parent, PJ::PlotDataMapRef &dataplot);
 
-  void clear() override
-  {
-    setRowCount(0);
-    _inserted_curves.clear();
-  }
+    void clear() override
+    {
+        setRowCount(0);
+        _inserted_curves.clear();
+    }
 
   void addItem(const QString& prefix, const QString& tree_name, const QString &plot_ID) override;
 
@@ -128,8 +129,9 @@ public:
 
   virtual void hideValuesColumn(bool hide) override;
 
-private:
+  private:
   int _hidden_count = 0;
+  PJ::PlotDataMapRef &dataplot;
   QSet<QString> _inserted_curves;
 };
 

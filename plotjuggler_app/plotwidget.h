@@ -17,13 +17,54 @@
 #include "transforms/custom_function.h"
 #include "transforms/transform_selector.h"
 #include <deque>
+#include <iterator>
+#include <list>
 #include <map>
+#include <string.h>
 #include <QDomDocument>
+#include <QMenu>
 #include <QMessageBox>
 #include <QObject>
 #include <QTextEdit>
 #include <QTime>
+#include <qwt_text_label.h>
 typedef enum { Partial, Full } ViewMode;
+typedef struct
+{
+    std::string name;
+    std::list<QwtPlotMarker *> markers;
+    //QColor color;
+    int colorindex = 0;
+
+    bool markersContain(double time)
+    {
+        for (std::list<QwtPlotMarker *>::const_iterator iter = this->markers.begin();
+             iter != this->markers.end();
+             iter++) {
+            if ((*iter)->value().x() == time) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    double getMaxX()
+    {
+        double max = -std::numeric_limits<double>::max();
+        for (auto &mkr : markers) {
+            max = (max < mkr->xValue()) ? mkr->xValue() : max;
+        }
+        return max;
+    }
+    double getMinX()
+    {
+        double min = std::numeric_limits<double>::max();
+        for (auto &mkr : markers) {
+            min = (min > mkr->xValue()) ? mkr->xValue() : min;
+        }
+        return min;
+    }
+} LabelSets;
 class PlotWidget : public QwtPlot
 {
   Q_OBJECT
@@ -37,6 +78,7 @@ public:
     QwtPlotMarker* marker;
   };
 
+  std::map<std::string, LabelSets *> label; // <var_name,>
   PlotWidget(PlotDataMapRef &datamap, QWidget *parent = nullptr);
 
   void setContextMenuEnabled(bool enabled);
@@ -44,11 +86,10 @@ public:
   virtual ~PlotWidget() override;
 
   bool isEmpty() const;
-
   const std::list<CurveInfo> &curveList() const;
 
   std::list<CurveInfo> &curveList();
-
+  int widget_colorindex = 0;
   CurveInfo* curveFromTitle(const QString &title);
 
   const CurveInfo* curveFromTitle(const QString &title) const;
@@ -60,6 +101,7 @@ public:
   ViewMode getViewMode(ViewMode mode) const { return viewMode; };
   void toggleViewMode() { viewMode = (viewMode == Full) ? Partial : Full; }
   Range getMaximumRangeX() const;
+  Range getMaximumRangeXNumeric() const;
 
   Range getMaximumRangeY(Range range_X) const;
 
@@ -76,8 +118,8 @@ public:
     return _legend;
   }
 
-  CurveInfo* addCurve(const std::string& name, QColor color = Qt::transparent);
-
+  CurveInfo *addCurve(const std::string &name, QColor color = Qt::transparent);
+  void addLabel(const std::string &name);
   void setLegendSize(int size);
 
   bool isLegendVisible() const;
@@ -148,6 +190,7 @@ public slots:
   void replot() override;
 
   void updateCurves();
+  void updateLabel();
 
   void onSourceDataRemoved(const std::string &src_name);
 
@@ -181,8 +224,8 @@ public slots:
   void on_changeDateTimeScale(bool enable);
 
   void on_changeCurveColor(const QString &curve_name, QColor new_color);
-
-private slots:
+  double getplotyMid() { return plotyMid; }
+  private slots:
 
   //void on_changeToBuiltinTransforms(QString new_transform);
 
@@ -221,19 +264,22 @@ private:
   QAction* _action_saveToFile;
   QAction* _action_copy;
   QAction* _action_paste;
-  QAction* _action_image_to_clipboard;
+  QAction *_action_image_to_clipboard;
+  QMenu *_action_remove_label;
+  void remove_Labels();
 
-  PlotZoomer* _zoomer;
+  PlotZoomer *_zoomer;
   PlotMagnifier* _magnifier;
   QwtPlotPanner* _panner1;
-  QwtPlotPanner* _panner2;
+  QwtPlotPanner *_panner2;
+  void addQwtPlotMarker(LabelSets *ls, std::string labeltext, double x, double y);
 
   CurveTracker* _tracker;
   PlotLegend* _legend;
   QwtPlotGrid* _grid;
   float plot_autoXWidth = 30;
   ViewMode viewMode = Full; //Change Mode
-
+  float plotyMid = 0.0;
   bool _use_date_time_scale;
 
   int _color_index;
@@ -243,14 +289,9 @@ private:
 
   struct DragInfo
   {
-    enum
-    {
-      NONE,
-      CURVES,
-      NEW_XY
-    } mode;
-    std::vector<QString> curves;
-    QObject* source;
+      enum { NONE, CURVES, NEW_XY, STRINGS } mode;
+      std::vector<QString> curves;
+      QObject *source;
   };
 
   DragInfo _dragging;
@@ -267,7 +308,9 @@ private:
 
   QwtSeriesWrapper* createCurveXY(const PlotData* data_x, const PlotData* data_y);
 
-  QwtSeriesWrapper* createTimeSeries(const QString& transform_ID, const PlotData* data);
+  QwtSeriesWrapper *createTimeSeries(const QString &transform_ID, const PlotData *data);
+  void addLabelMarker(LabelSets &ls, const char *enum_el, double x);
+  void updateLabelSets();
 
   double _time_offset;
 

@@ -36,12 +36,9 @@ public slots:
 
   bool isEnabled() const;
 
-  void redraw()
-  {
-    setPosition(_prev_trackerpoint);
-  }
+  void redraw() { setPosition(_prev_trackerpoint); }
 
-private:
+  private:
   QLineF curveLineAt(const QwtPlotCurve*, double x) const;
 
   QPointF transform(QPoint);

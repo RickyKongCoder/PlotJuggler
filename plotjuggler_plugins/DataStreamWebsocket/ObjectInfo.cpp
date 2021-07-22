@@ -4,7 +4,16 @@
 #include "stdint.h"
 #include "variant"
 #include <PlotJuggler/plotdata.h>
+#include <cstring>
+
+#include <QDebug>
+using namespace std;
 QVector<uint8_t> ObjSize = {TYPE_SIZE_MAP(GET_SIZE)};
+//#ifdef qDebug()
+//#define debug_(var) qDebug() << var;
+//#else
+//#define debug_(var)
+//#endif
 ObjectType ObjectInfo::getType()
 {
     return type;
@@ -44,14 +53,15 @@ void ObjectInfo::setBytestoValue(char *array)
 
     //        //        memcpy(&value, array, size);
     //    }
-    qDebug() << "the float value " << value.f;
-    qDebug() << "the int8 value " << value.i8;
-    qDebug() << "the int16 value " << value.i16;
-    qDebug() << "the int32 value " << value.i8;
-    qDebug() << "the doube value " << value.d;
-    qDebug() << "the XYTheta x " << value.xyt.x_pos;
-    qDebug() << "the XYTheta y " << value.xyt.y_pos;
-    qDebug() << "the XYTheta theta " << value.xyt.theta;
+    //debug("the float value " << value.f)
+    //    qDebug() << "the float value " << value.f;
+    //    qDebug() << "the int8 value " << value.i8;
+    //    qDebug() << "the int16 value " << value.i16;
+    //    qDebug() << "the int32 value " << value.i8;
+    //    qDebug() << "the doube value " << value.d;
+    //    qDebug() << "the XYTheta x " << value.xyt.x_pos;
+    //    qDebug() << "the XYTheta y " << value.xyt.y_pos;
+    //    qDebug() << "the XYTheta theta " << value.xyt.theta;
     //    qDebug() << "the float value " << value.f << endl;
     //    qDebug() << "the float value " << value.f << endl;
 }
@@ -60,7 +70,7 @@ double ObjectInfo::getValueInDouble()
 {
     switch (type) {
     case FLOAT_:
-        qDebug() << "it is float" << endl;
+        //   qDebug() << "it is float" << endl;
         return (double) (this->value.f);
     case INT8_:
         return (double) this->value.i8;
@@ -97,6 +107,26 @@ void ObjectInfo::setId(uint8_t id)
 {
     this->id = id;
 }
+void ObjectInfo::addPlotifNotExist(PJ::PlotDataMapRef *datamap)
+{
+    if (this->isnumeric()) {
+        this->addPlotNumeric(datamap);
+    } else if (this->type == ENUMTYPE_) {
+        this->addPlotEnum(datamap);
+    } else {
+    }
+}
+
+void ObjectInfo::addPlotEnum(PJ::PlotDataMapRef *datamap)
+{
+    auto &serial_strings_plots = datamap->strings;
+    auto target_plotIt = serial_strings_plots.find(name.toStdString());
+    qDebug() << "name" << name;
+
+    if (target_plotIt == serial_strings_plots.end()) {
+        datamap->addStringSeries(name.toStdString());
+    }
+}
 void ObjectInfo::addPlotNumeric(PJ::PlotDataMapRef *datamap)
 {
     switch (type) {
@@ -104,20 +134,28 @@ void ObjectInfo::addPlotNumeric(PJ::PlotDataMapRef *datamap)
     case INT8_:
     case INT16_:
     case INT32_:
-    case DOUBLE64_:
+    case DOUBLE64_: {
+        auto &serial_numeric_plots = datamap->numeric;
+        auto target_plotIt = serial_numeric_plots.find(name.toStdString());
+        if (target_plotIt == serial_numeric_plots.end()) {
+            qDebug() << "name" << name;
+        }
         datamap->addNumeric(name.toStdString());
+
         break;
+    }
     case XYTHETA_:
         datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "x");
         datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "y");
         datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "theta");
 
         break;
+
     default:
         break;
     }
 }
-void ObjectInfo::updatePlotNumeric(PJ::PlotDataMapRef *datamap, double param[], double time)
+void ObjectInfo::updatePlotNumeric(PJ::PlotDataMapRef &datamap, double time, double param[])
 {
     switch (type) {
     case FLOAT_:
@@ -125,16 +163,51 @@ void ObjectInfo::updatePlotNumeric(PJ::PlotDataMapRef *datamap, double param[], 
     case INT16_:
     case INT32_:
     case DOUBLE64_:
+        datamap.numeric.find(name.toStdString())
+            ->second.pushBack({(double) time, this->getValueInDouble()});
         break;
     case XYTHETA_:
-        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "x").pushBack({time, param[0]});
-        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "y").pushBack({time, param[1]});
-        datamap->getOrCreateNumeric("/" + name.toStdString() + "/" + "theta")
-            .pushBack({time, param[2]});
+
+        if (sizeof(param) / sizeof(param[0]) == 0) {
+            datamap.getOrCreateNumeric("/" + name.toStdString() + "/" + "x")
+                .pushBack({time, this->value.xyt.x_pos});
+            datamap.getOrCreateNumeric("/" + name.toStdString() + "/" + "y")
+                .pushBack({time, this->value.xyt.y_pos});
+            datamap.getOrCreateNumeric("/" + name.toStdString() + "/" + "theta")
+                .pushBack({time, this->value.xyt.theta});
+        }
+        //        qDebug() << "x" << ((XYTheta *) this->getValueRef())->x_pos << endl;
+        //        qDebug() << "y" << ((XYTheta *) this->getValueRef())->y_pos << endl;
+        //        qDebug() << "theta" << ((XYTheta *) this->getValueRef())->theta << endl;
+        //        double xyt[] = {double(((XYTheta *) this->getValueRef())->x_pos),
+        //                        double(((XYTheta *) this->getValueRef())->y_pos),
+        //                        double(((XYTheta *) this->getValueRef())->theta)};
+        break;
+
+    default:
         break;
     }
 }
 
+//string yeeeh = "yeeh";
+void ObjectInfo::updatePlotEnum(PJ::PlotDataMapRef &datamap, double time)
+{
+    //    yeeeh += "FUCK";
+    //    qDebug() << "GET STRING"
+    //             << QString::fromStdString(ptr->enum_Map.find(this->value.enumid)->second.toStdString());
+    //datamap.strings.find(name.toStdString())->second.pushBack({time, });
+    datamap.strings.find(name.toStdString())
+        ->second.pushBack({time, ptr->enum_Map.find(this->value.enumid)->second.toStdString()});
+}
+void ObjectInfo::updatePlot(PJ::PlotDataMapRef &datamap, double time, double param[])
+{
+    if (this->isnumeric()) {
+        updatePlotNumeric(datamap, time, param);
+    } else if (this->type == ENUMTYPE_) {
+        updatePlotEnum(datamap, time);
+    } else {
+    }
+}
 uint8_t ObjectInfo::getId()
 {
     return id;

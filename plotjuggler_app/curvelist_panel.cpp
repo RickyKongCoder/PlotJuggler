@@ -23,16 +23,13 @@
 
 //-------------------------------------------------
 
-CurveListPanel::CurveListPanel(PlotDataMapRef& mapped_plot_data,
-                               const CustomPlotMap& mapped_math_plots,
-                               QWidget* parent)
-  : QWidget(parent)
-  , ui(new Ui::CurveListPanel)
-  , _plot_data( mapped_plot_data )
-  , _custom_view(new CurveTableView(this))
-  , _tree_view(new CurveTreeView(this))
-  , _custom_plots(mapped_math_plots)
-  , _column_width_dirty (true)
+CurveListPanel::CurveListPanel(PlotDataMapRef &mapped_plot_data,
+                               const CustomPlotMap &mapped_math_plots,
+                               QWidget *parent)
+    : QWidget(parent), ui(new Ui::CurveListPanel), _plot_data(mapped_plot_data),
+      _custom_view(new CurveTableView(this, mapped_plot_data)),
+      _tree_view(new CurveTreeView(this, mapped_plot_data)), _custom_plots(mapped_math_plots),
+      _column_width_dirty(true)
 {
   ui->setupUi(this);
 
@@ -295,20 +292,24 @@ void CurveListPanel::refreshValues()
 
     {
       auto it = _plot_data.strings.find(name);
-      if (it != _plot_data.strings.end())
-      {
-        auto& plot_data = it->second;
-        auto val = plot_data.getYfromX(_tracker_time);
-        if( val ) {
-          auto str_view = val.value();
-          char last_byte = str_view.data()[ str_view.size()-1 ];
-          if( last_byte == '\0') {
-            return QString::fromLocal8Bit( str_view.data(), str_view.size() - 1 );
+      if (it != _plot_data.strings.end()) {
+          auto &plot_data = it->second;
+          qDebug() << "this is the latest string data"
+                   << (plot_data.at(plot_data.size() - 1).y.data());
+          auto val = plot_data.getYfromX(_tracker_time); //don'use tracker_time
+          //directly get latest
+          //    auto val = std::optional(plot_data.at(plot_data.size() - 1).y);//this shows the latest
+          qDebug() << "this is the tracker time" << _tracker_time;
+          //     qDebug() << "this is the val using get y from x"<< plot_data.getYfromX(_tracker_time).value();
+          if (val) {
+              auto str_view = val.value();
+              char last_byte = str_view.data()[str_view.size() - 1];
+              if (last_byte == '\0') {
+                  return QString::fromLocal8Bit(str_view.data(), str_view.size() - 1);
+              } else {
+                  return QString::fromLocal8Bit(str_view.data(), str_view.size());
+              }
           }
-          else{
-            return QString::fromLocal8Bit( str_view.data(), str_view.size() );
-          }
-        }
       }
     }
     return "-";

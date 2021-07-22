@@ -1,0 +1,3 @@
+My Comment::
+//drag add plot graph here
+//remove remove (this is for all dealocation shits)
