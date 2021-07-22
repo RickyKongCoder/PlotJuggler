@@ -388,7 +388,7 @@ void PlotWidget::canvasContextMenuTriggered(const QPoint &pos)
   menu.addAction(_action_paste);
   menu.addAction(_action_image_to_clipboard);
   menu.addAction(_action_saveToFile);
-  menu.addAction(_action_remove_label);
+  menu.addMenu(_action_remove_label);
 
   // check the clipboard
   QClipboard *clipboard = QGuiApplication::clipboard();
