@@ -550,9 +550,9 @@ void WebsocketServer::processBinaryMessage(QByteArray message, WebSocket *qsocke
     switch (qsocket->pstate) {
     case INIT:{
         pass = waitready_proc(message, qsocket);
-        pass = waitinit_cyclproc(message, qsocket);
+        pass = waitinit_cyclproc(pass, qsocket);
         qsocket->pstate = (initcycl_proc(pass, qsocket)) ? TRANSFER : INIT;
-        qDebug() << pass << "message for now" << endl;
+        //qDebug() << pass << "message for now" << endl;
         QString str = QString(ready_byte);
         qsocket->get()->sendTextMessage(str);
         break;}
