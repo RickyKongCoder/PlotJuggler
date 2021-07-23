@@ -428,7 +428,7 @@ bool WebsocketServer::initcycl_proc(QByteArray message, WebSocket *pSocket)
                 pSocket->get_enumRef()[enum_name]->enum_Map.insert(
                     pair<uint8_t, QString>(enum_index, message.mid(iter - message.begin(), strlen)));
             iter = std::next(iter, strlen - 1);
-            if (*std::next(iter, 1) == '/') { //detect end signal
+            if (*std::next(iter, 1) == '^') { //detect end signal
                 pSocket->proc_state = ID;
                 pSocket->prev_state = ENUMELEM;
                 iter = std::next(iter, 1);
@@ -549,8 +549,8 @@ void WebsocketServer::processBinaryMessage(QByteArray message, WebSocket *qsocke
 
     switch (qsocket->pstate) {
     case INIT: {
-        //  pass = waitready_proc(message, qsocket);
-        pass = waitinit_cyclproc(message, qsocket);
+        pass = waitready_proc(message, qsocket);
+        pass = waitinit_cyclproc(pass, qsocket);
         qsocket->pstate = (initcycl_proc(pass, qsocket)) ? TRANSFER : INIT;
         //qDebug() << pass << "message for now" << endl;
         QString str = QString(ready_byte);
