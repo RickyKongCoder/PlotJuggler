@@ -503,21 +503,30 @@ bool WebsocketServer::procc_data(QByteArray message, WebSocket *pSocket)
             debug("Recieved ID Tran" << id) obj_ptr = pSocket->get_objsRef()[*iter];
             var_name = obj_ptr->getName().toStdString();
             type = obj_ptr->getType();
+            if (type == LOGING_THREAD)
+                pSocket->proc_state = STRLEN_TRAN;
+            else
+                pSocket->proc_state = DATABYTE;
+            break;
+        case STRLEN_TRAN:
+            debug("str len tran size of data" << obj_ptr->getSize());
+
+            obj_ptr->setSize(*iter);
             pSocket->proc_state = DATABYTE;
             break;
         case DATABYTE: {
             size = obj_ptr->getSize();
-            //   qDebug() << "Tran var Size " << size << endl;
+            //qDebug() << "Tran var Size " << size << endl;
             debug("Tran var Size" << size);
-            debug("Data message" << message) // qDebug() << "Data message" << message << endl;
+            debug("Data message" << message); // qDebug() << "Data message" << message << endl;
 
-                obj_ptr->addPlotifNotExist(&dataMap());
+            obj_ptr->addPlotifNotExist(&dataMap());
             char *array = message.mid(iter - message.begin(), size).data();
             obj_ptr->setBytestoValue(message.mid(iter - message.begin(), size)
                                          .data()); //for enum it is a byte with enum id so...
             obj_ptr->updatePlot(dataMap(), time);
-
-            debug("size" << dataMap().strings.size());
+            //  obj_ptr->showallinloging(dataMap());
+            //debug("size" << dataMap().strings.size());
             pSocket->proc_state = ID_TRAN;
             iter = next(iter, size - 1);
             break;

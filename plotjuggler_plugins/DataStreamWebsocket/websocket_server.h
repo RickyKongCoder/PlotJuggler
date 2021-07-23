@@ -49,7 +49,8 @@ typedef enum {
     END_INIT,
     ID_TRAN,
     TIME,
-    DATABYTE
+    DATABYTE,
+    STRLEN_TRAN
 } ProcessSubstate;
 
 using namespace PJ;

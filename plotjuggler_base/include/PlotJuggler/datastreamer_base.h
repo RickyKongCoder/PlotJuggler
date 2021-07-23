@@ -62,8 +62,10 @@ public:
     }
     return _available_parsers;
   }
+  public slots:
+  void removedcurves() { ; };
 
-signals:
+  signals:
 
   // Request to clear previous data
   void clearBuffers();
@@ -77,7 +79,7 @@ signals:
   // Stopping a plugin from the "inside"
   void closed();
 
-private:
+  private:
   std::mutex _mutex;
   PlotDataMapRef _data_map;
   QAction* _start_streamer;

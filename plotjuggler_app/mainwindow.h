@@ -194,7 +194,11 @@ private:
   void updateTimeSlider();
   double getstringsMaxTime();
   double getstringsMinTime();
+  double getlogMaxTime();
+  double getlogMinTime();
+
   int getstringsMaxstep();
+  int getlogsMaxstep();
   void updateTimeOffset();
 
   void buildDummyData();

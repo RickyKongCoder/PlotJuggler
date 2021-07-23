@@ -70,7 +70,7 @@ MainWindow::MainWindow(const QCommandLineParser &commandline_parser, QWidget *pa
       _playback_shotcut(Qt::Key_Space, this), _minimized(false), _active_streamer_plugin(nullptr),
       _disable_undo_logging(false), _tracker_time(0), _tracker_param(CurveTracker::VALUE),
       _labels_status(LabelStatus::RIGHT), _recent_data_files(new QMenu()),
-      _recent_layout_files(new QMenu()), logpanel(new LogPanel(this))
+      _recent_layout_files(new QMenu()), logpanel(new LogPanel(_mapped_plot_data, this))
 {
   QLocale::setDefault(QLocale::c());  // set as default
 
@@ -123,6 +123,7 @@ MainWindow::MainWindow(const QCommandLineParser &commandline_parser, QWidget *pa
   {
     updatedDisplayTime();
     onUpdateLeftTableValues();
+    qDebug() << "_tracker_delaty_timer";
   });
 
   ui->labelStreamingAnimation->setMovie(_animated_streaming_movie);
@@ -388,6 +389,9 @@ void MainWindow::onUndoInvoked()
 void MainWindow::onUpdateLeftTableValues()
 {
   _curvelist_widget->update2ndColumnValues(_tracker_time);
+  ///update tracker time for log panel here
+  logpanel->update(_tracker_time);
+  qDebug() << "onUpdateLeftTableValues" << _tracker_time;
 }
 
 void MainWindow::onTrackerMovedFromWidget(QPointF relative_pos)
@@ -408,24 +412,22 @@ void MainWindow::onTimeSlider_valueChanged(double abs_time)
 }
 
 void MainWindow::onTrackerTimeUpdated(double absolute_time, bool do_replot)
-{ 
-  if( !_tracker_delaty_timer->isActive() )
-  {
-    _tracker_delaty_timer->start( 100 ); // 10 Hz at most
-  }
-
-  for (auto& it : _state_publisher)
-  {
-    it.second->updateState(absolute_time);
-  }
-
-  forEachWidget([&](PlotWidget* plot) {
-    plot->setTrackerPosition(_tracker_time);
-    if (do_replot)
-    {
-      plot->replot();
+{
+    if (!_tracker_delaty_timer->isActive()) {
+        qDebug() << "timer start shit";
+        _tracker_delaty_timer->start(100); // 10 Hz at most
     }
-  });
+
+    for (auto &it : _state_publisher) {
+        it.second->updateState(absolute_time);
+    }
+
+    forEachWidget([&](PlotWidget *plot) {
+        plot->setTrackerPosition(_tracker_time);
+        if (do_replot) {
+            plot->replot();
+        }
+    });
 }
 
 void MainWindow::initializeActions()
@@ -1942,11 +1944,17 @@ void MainWindow::updateTimeSlider()
     auto range = calculateVisibleRangeX();
 
     double stringmaxtime = getstringsMaxTime();
+    double logmaxtime = getlogMaxTime();
+    double logmintime = getlogMinTime();
     double stringmintime = getstringsMinTime();
     double stringmaxstep = getstringsMaxstep();
     double max = (std::get<1>(range) < stringmaxtime) ? stringmaxtime : std::get<1>(range);
+    max = (max > logmaxtime) ? max : logmaxtime;
     int max_step = (std::get<2>(range) < stringmaxstep) ? stringmaxstep : std::get<2>(range);
     double min = (std::get<0>(range) < stringmintime) ? stringmintime : std::get<0>(range);
+    min = (min < logmaxtime) ? min : logmaxtime;
+    double maxlogstep = getlogsMaxstep();
+    max_step = (maxlogstep > max_step) ? maxlogstep : max_step;
     ui->timeSlider->setLimits(min, max, max_step);
     _tracker_time = std::max(_tracker_time,
                              ui->timeSlider->getMinimum()); //this is the second bitch
@@ -2000,7 +2008,10 @@ double MainWindow::trackerGetMaxTime()
     double max_time_ = 0;
     //    if (_mapped_plot_data.numeric.size() != 0)
     double max_time_str = getstringsMaxTime();
+    double max_time_log = getlogMaxTime();
+    qDebug() << "max time log" << max_time_log;
     max_time_ = (std::get<1>(range) > max_time_str) ? std::get<1>(range) : max_time_str;
+    max_time_ = (max_time_ < max_time_log) ? max_time_log : max_time_;
     return max_time_;
 }
 double MainWindow::getstringsMaxTime()
@@ -2018,6 +2029,37 @@ double MainWindow::getstringsMaxTime()
         }
     }
     return max_;
+}
+double MainWindow::getlogMaxTime()
+{
+    double max_ = 0;
+    for (std::unordered_map<std::string, StringSeries>::const_iterator iter
+         = _mapped_plot_data.loging_message.begin();
+         iter != _mapped_plot_data.loging_message.end();
+         iter++) {
+        for (int i = 0; i < iter->second.size(); i++) {
+            if (max_ < iter->second.at(i).x) {
+                max_ = iter->second.at(i).x;
+            }
+        }
+    }
+    return max_;
+}
+double MainWindow::getlogMinTime()
+{
+    double min = 0;
+
+    for (std::unordered_map<std::string, StringSeries>::const_iterator iter
+         = _mapped_plot_data.loging_message.begin();
+         iter != _mapped_plot_data.loging_message.end();
+         iter++) {
+        for (int i = 0; i < iter->second.size(); i++) {
+            if (min > iter->second.at(i).x) {
+                min = iter->second.at(i).x;
+            }
+        }
+    }
+    return min;
 }
 double MainWindow::getstringsMinTime()
 {
@@ -2048,6 +2090,19 @@ int MainWindow::getstringsMaxstep()
     }
     return max_step;
 };
+int MainWindow::getlogsMaxstep()
+{
+    int max_step = 0;
+    for (std::unordered_map<std::string, StringSeries>::const_iterator iter
+         = _mapped_plot_data.loging_message.begin();
+         iter != _mapped_plot_data.loging_message.end();
+         iter++) {
+        int size = iter->second.size();
+        max_step = (max_step < size) ? size : max_step;
+    }
+    return max_step;
+}
+
 void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
 {
   _replot_timer->stop();
@@ -2083,6 +2138,7 @@ void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
     auto* dst_plot = &_mapped_plot_data.numeric.at(custom_it.first);
     custom_it.second->calculate(_mapped_plot_data, dst_plot);
   }
+
   forEachWidget([](PlotWidget *plot) {
       plot->updateCurves();
       plot->updateLabel();
@@ -2096,6 +2152,7 @@ void MainWindow::updateDataAndReplot(bool replot_hidden_tabs)
   if (is_streaming_active) {
       ///get max
       _tracker_time = trackerGetMaxTime(); //this is the bitch
+      qDebug() << "_tracker_time" << _tracker_time;
       onTrackerTimeUpdated(_tracker_time, false);
       updateTimeSlider();
 

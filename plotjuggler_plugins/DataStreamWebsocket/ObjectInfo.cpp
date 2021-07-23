@@ -26,10 +26,18 @@ uint8_t ObjectInfo::typeToSize(ObjectType type)
 void ObjectInfo::setTypeMem(ObjectType type)
 {
     this->type = type;
+    if (type == LOGING_THREAD) {
+        log_message = new char[255];
+    }
 }
 void ObjectInfo::setBytestoValue(char *array)
 {
-    memcpy(&value, array, size);
+    if (type == LOGING_THREAD)
+        std::strcpy(log_message, array);
+
+    else
+        memcpy(&value, array, size);
+
     //    if (size == 8) {
     //        memcpy(&value, array, 8);
 
@@ -54,16 +62,18 @@ void ObjectInfo::setBytestoValue(char *array)
     //        //        memcpy(&value, array, size);
     //    }
     //debug("the float value " << value.f)
-    //    qDebug() << "the float value " << value.f;
-    //    qDebug() << "the int8 value " << value.i8;
-    //    qDebug() << "the int16 value " << value.i16;
-    //    qDebug() << "the int32 value " << value.i8;
-    //    qDebug() << "the doube value " << value.d;
-    //    qDebug() << "the XYTheta x " << value.xyt.x_pos;
-    //    qDebug() << "the XYTheta y " << value.xyt.y_pos;
-    //    qDebug() << "the XYTheta theta " << value.xyt.theta;
-    //    qDebug() << "the float value " << value.f << endl;
-    //    qDebug() << "the float value " << value.f << endl;
+    qDebug() << "the float value " << value.f;
+    qDebug() << "the int8 value " << value.i8;
+    qDebug() << "the int16 value " << value.i16;
+    qDebug() << "the int32 value " << value.i8;
+    qDebug() << "the doube value " << value.d;
+    qDebug() << "the XYTheta x " << value.xyt.x_pos;
+    qDebug() << "the XYTheta y " << value.xyt.y_pos;
+    qDebug() << "the XYTheta theta " << value.xyt.theta;
+    qDebug() << "the float value " << value.f << endl;
+    qDebug() << "the float value " << value.f << endl;
+    if (type == LOGING_THREAD)
+        qDebug() << "const string message*" << log_message << endl;
 }
 
 double ObjectInfo::getValueInDouble()
@@ -86,6 +96,7 @@ double ObjectInfo::getValueInDouble()
         //  return this->value.xyt;
     case ENUMTYPE_:
         return 0;
+
     default:
         return 0;
         break;
@@ -113,7 +124,8 @@ void ObjectInfo::addPlotifNotExist(PJ::PlotDataMapRef *datamap)
         this->addPlotNumeric(datamap);
     } else if (this->type == ENUMTYPE_) {
         this->addPlotEnum(datamap);
-    } else {
+    } else if (this->type == LOGING_THREAD) {
+        this->addPlotLoging(datamap);
     }
 }
 
@@ -121,10 +133,19 @@ void ObjectInfo::addPlotEnum(PJ::PlotDataMapRef *datamap)
 {
     auto &serial_strings_plots = datamap->strings;
     auto target_plotIt = serial_strings_plots.find(name.toStdString());
-    qDebug() << "name" << name;
+    qDebug() << "add Plot enum name" << name;
 
     if (target_plotIt == serial_strings_plots.end()) {
         datamap->addStringSeries(name.toStdString());
+    }
+}
+void ObjectInfo::addPlotLoging(PJ::PlotDataMapRef *datamap)
+{
+    auto &serial_strings_plots = datamap->loging_message;
+    auto target_plotIt = serial_strings_plots.find(name.toStdString());
+    qDebug() << "add Plot loging name" << name;
+    if (target_plotIt == serial_strings_plots.end()) {
+        datamap->addLogingSeries(name.toStdString());
     }
 }
 void ObjectInfo::addPlotNumeric(PJ::PlotDataMapRef *datamap)
@@ -154,6 +175,10 @@ void ObjectInfo::addPlotNumeric(PJ::PlotDataMapRef *datamap)
     default:
         break;
     }
+}
+void ObjectInfo::setString(const char *str)
+{
+    ;
 }
 void ObjectInfo::updatePlotNumeric(PJ::PlotDataMapRef &datamap, double time, double param[])
 {
@@ -199,13 +224,28 @@ void ObjectInfo::updatePlotEnum(PJ::PlotDataMapRef &datamap, double time)
     datamap.strings.find(name.toStdString())
         ->second.pushBack({time, ptr->enum_Map.find(this->value.enumid)->second.toStdString()});
 }
+void ObjectInfo::showallinloging(PJ::PlotDataMapRef &datamap)
+{
+    for (auto &ptr : datamap.loging_message) {
+        for (auto &str : ptr.second) {
+            qDebug() << str.y.data() << ",";
+        }
+    }
+}
+void ObjectInfo::updatePlotLoging(PJ::PlotDataMapRef &datamap, double time)
+{
+    datamap.loging_message.find(name.toStdString())->second.pushBack({time, log_message});
+
+    return;
+}
 void ObjectInfo::updatePlot(PJ::PlotDataMapRef &datamap, double time, double param[])
 {
     if (this->isnumeric()) {
         updatePlotNumeric(datamap, time, param);
     } else if (this->type == ENUMTYPE_) {
         updatePlotEnum(datamap, time);
-    } else {
+    } else if (this->type = LOGING_THREAD) {
+        updatePlotLoging(datamap, time);
     }
 }
 uint8_t ObjectInfo::getId()

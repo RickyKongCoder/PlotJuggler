@@ -91,6 +91,7 @@ MoveDataRet MoveData(PlotDataMapRef &source,
   moveDataImpl( source.numeric, destination.numeric );
   moveDataImpl( source.strings, destination.strings );
   moveDataImpl( source.user_defined, destination.user_defined );
+  moveDataImpl(source.loging_message, destination.loging_message); //haha bitch
 
   return ret;
 }

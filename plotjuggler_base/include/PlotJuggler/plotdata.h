@@ -18,6 +18,7 @@ struct PlotDataMapRef
     std::unordered_map<std::string, PlotData> numeric; //it is public bitch
     std::unordered_map<std::string, PlotDataAny> user_defined;
     std::unordered_map<std::string, StringSeries> strings;
+    std::unordered_map<std::string, StringSeries> loging_message;
     std::unordered_map<std::string, PlotGroup::Ptr> groups;
 
     template<typename T>
@@ -65,8 +66,13 @@ struct PlotDataMapRef
   {
     return addImpl(strings, name, group);
   }
+  std::unordered_map<std::string, StringSeries>::iterator addLogingSeries(const std::string &name,
+                                                                          PlotGroup::Ptr group = {})
+  {
+      return addImpl(loging_message, name, group);
+  }
 
-  PlotData& getOrCreateNumeric(const std::string& name, PlotGroup::Ptr group = {})
+  PlotData &getOrCreateNumeric(const std::string &name, PlotGroup::Ptr group = {})
   {
     return getOrCreateImpl( numeric, name, group );
   }
@@ -75,8 +81,12 @@ struct PlotDataMapRef
   {
     return getOrCreateImpl( strings, name, group );
   }
+  StringSeries &getOrCreateLogingSeries(const std::string &name, PlotGroup::Ptr group = {})
+  {
+      return getOrCreateImpl(loging_message, name, group);
+  }
 
-  PlotDataAny& getOrCreateUserDefined(const std::string& name, PlotGroup::Ptr group = {})
+  PlotDataAny &getOrCreateUserDefined(const std::string &name, PlotGroup::Ptr group = {})
   {
     return getOrCreateImpl( user_defined, name, group );
   }

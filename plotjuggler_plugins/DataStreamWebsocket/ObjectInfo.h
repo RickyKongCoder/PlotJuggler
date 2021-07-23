@@ -15,6 +15,7 @@ using namespace std;
     X(DOUBLE64_, 8) \
     X(XYTHETA_, 12) \
     X(ENUMTYPE_, 1) \
+    X(LOGING_THREAD, 0) \
     X(CUSTOM, 0)
 #define DEBUG_
 
@@ -38,6 +39,7 @@ struct ENUMTYPE : QObject
     ENUMTYPE(QString name) { this->name = name; }
     map<uint8_t, QString> enum_Map;
 };
+
 class ObjectInfo : QObject
 {
     Q_OBJECT
@@ -45,7 +47,7 @@ private:
     uint8_t id;
     ObjectType type;
     QString name;
-    ENUMTYPE *ptr = nullptr;
+    ENUMTYPE *ptr;
     uint8_t size;
     union {
         int8_t i8;
@@ -56,6 +58,8 @@ private:
         XYTheta xyt;
         uint8_t enumid;
     } value;
+    char *log_message;
+
     uint8_t typeToSize(ObjectType type);
 
 public:
@@ -88,13 +92,22 @@ public:
     void addPlotNumeric(PJ::PlotDataMapRef *datamap);
     void addPlotEnum(PJ::PlotDataMapRef *datamap);
     void addPlotifNotExist(PJ::PlotDataMapRef *datamap);
+    void addPlotLoging(PJ::PlotDataMapRef *datamap);
 
     void updatePlot(PJ::PlotDataMapRef &datamap, double time, double param[] = {});
     void updatePlotNumeric(PJ::PlotDataMapRef &datamap, double time, double param[] = {});
     void updatePlotEnum(PJ::PlotDataMapRef &datamap, double time);
+    void updatePlotLoging(PJ::PlotDataMapRef &datamap, double time);
+    void setString(const char *str);
+    const char *getString() { return log_message; }
     double getValueInDouble();
+    void showallinloging(PJ::PlotDataMapRef &datamap);
 
-    ~ObjectInfo() {}
+    ~ObjectInfo()
+    {
+        if (log_message != nullptr)
+            delete log_message;
+    }
 };
 using var_t = std::variant<int8_t, int16_t, int32_t, float, double, XYTheta>;
 
