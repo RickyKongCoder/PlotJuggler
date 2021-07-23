@@ -42,6 +42,7 @@
 #include <QSvgGenerator>
 #include <QWheelEvent>
 #include <QtXml/QDomElement>
+#include <qwt_graphic.h>
 
 int PlotWidget::global_color_index = 0;
 QColor mcolor[] = {Qt::blue, Qt::red, Qt::yellow, Qt::cyan};
@@ -791,7 +792,7 @@ void PlotWidget::dropEvent(QDropEvent *)
         curves_changed = true;
     }
 
-    if (_dragging.mode == DragInfo::STRINGS) {
+    if (_dragging.mode == DragInfo::STRINGS && !isXYPlot()) {
         for (const auto &curve_name : _dragging.curves) {
             addLabel(curve_name.toStdString());
             curves_changed = true;
@@ -829,20 +830,29 @@ void PlotWidget::removeAllCurves()
 void PlotWidget::addQwtPlotMarker(LabelSets *ls, std::string labeltext, double x, double y)
 {
     QwtPlotMarker *qpm = new QwtPlotMarker;
+    if (ls->markers.size() == 0) {
+        qpm->setTitle(QString::fromStdString(ls->name));
+        qpm->setItemAttribute(QwtPlotItem::Legend, true); //ok
+        //        qpm->legendData().begin()->setValue(QwtLegendData::Role::TitleRole,
+        //                                            QString::fromStdString(labeltext));
+        _legend->updateLegend(qpm, qpm->legendData());
+    }
     QwtText qwttext{QString::fromStdString(labeltext)};
-    qwttext.setFont(QFont("Times", 20, QFont::Bold));
+    qwttext.setFont(QFont("Arial", 14, QFont::AllUppercase));
+    qwttext.setRenderFlags(Qt::AlignRight);
+
     qpm->setLabel(qwttext);
+    qpm->setLabelAlignment(Qt::AlignRight);
     qpm->setValue(x,
                   y); //i->x is the time bro haha
     qpm->setVisible(true);
-    qpm->setLinePen(Qt::blue, 1.0);
+    qpm->setLinePen(Qt::black, 1.0);
     QwtSymbol *sym = new QwtSymbol(QwtSymbol::Ellipse,
                                    mcolor[ls->colorindex],
                                    QPen(Qt::black),
-                                   QSize(16, 16));
+                                   QSize(8, 8));
     qpm->setSymbol(sym);
     qpm->attach(this);
-
     ls->markers.push_back(qpm);
 }
 void PlotWidget::addLabel(const std::string &label_name)
@@ -864,6 +874,23 @@ void PlotWidget::addLabel(const std::string &label_name)
                              i->x,
                              (this->canvasMap(yLeft).s1() + this->canvasMap(yLeft).s2()) / 2);
         }
+        QwtLegendData &data = *((*ls->markers.begin())->legendData().begin());
+
+        qDebug() << "legend data values:.........";
+
+        //   qDebug() << data.values().text() << endl;
+        //qDebug() << data.title() << endl;
+        //        QPainter *painter = new QPainter;
+        //        painter->setPen(mcolor[ls->colorindex]);
+        //        // painter->drawEllipse(0, 0, 12, 12);
+        //        QList<QwtLegendData> datalist;
+        //        datalist.push_back(data);
+        //        _legend->updateLegend(*ls->markers.begin(), datalist);
+        //  _legend
+        //            ->drawLegendData(painter,
+        //                             *ls->markers.begin(),
+        //                             const QwtLegendData &data,
+        //                             const QRectF &rect) const _legend->drawLegendData(data, nullptr, );
     }
 
     QwtText label{QString("FUCK THIS IS LABEL")};
@@ -1515,11 +1542,14 @@ void PlotWidget::updateLabel()
     updateMaximumZoomArea();
     qDebug() << "updateLabel" << endl;
     auto rangeY = getMaximumRangeY(getMaximumRangeXNumeric());
+    double height_sep = (this->canvasMap(yLeft).s2() - this->canvasMap(yLeft).s1())
+                        / (label.size() + 1);
+    qDebug() << "height_sep" << height_sep;
+    int index = 0;
     for (auto &lb : label) {
+        index++;
         for (auto &mk : lb.second->markers) {
-            mk->setYValue((this->canvasMap(yLeft).s1() + this->canvasMap(yLeft).s2()) / 2);
-            //  qDebug() << "this->canvasMap(yLeft).s1())" << this->canvasMap(yLeft).s1() << endl;
-            // qDebug() << "this->canvasMap(yLeft).s2()" << this->canvasMap(yLeft).s2() << endl;
+            mk->setYValue(this->canvasMap(yLeft).s1() + height_sep * index);
         }
     }
 }

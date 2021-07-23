@@ -61,7 +61,7 @@
            <number>6</number>
           </property>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0">
+           <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="0,0,0">
             <property name="topMargin">
              <number>8</number>
             </property>
@@ -82,6 +82,13 @@
              <widget class="QPushButton" name="pushButton">
               <property name="text">
                <string>Search Button</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="toolButton">
+              <property name="text">
+               <string>New Window</string>
               </property>
              </widget>
             </item>

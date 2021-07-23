@@ -13,10 +13,13 @@ public:
 
   QRectF hideButtonRect() const;
 
-  const QwtPlotItem* processMousePressEvent(QMouseEvent* mouse_event);
+  const QwtPlotItem *processMousePressEvent(QMouseEvent *mouse_event);
 
-private:
-  virtual void draw(QPainter* p, const QwtScaleMap& xMap, const QwtScaleMap& yMap, const QRectF& rect) const override;
+  private:
+  virtual void draw(QPainter *p,
+                    const QwtScaleMap &xMap,
+                    const QwtScaleMap &yMap,
+                    const QRectF &rect) const override;
 
   virtual void drawLegendData(QPainter* painter, const QwtPlotItem*, const QwtLegendData&,
                               const QRectF&) const override;
